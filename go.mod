@@ -3,6 +3,6 @@ module "GoTicTacToe"
 go 1.16
 
 require (
-	github.com/hajimehoshi/ebiten/v2 v2.0.7
-	golang.org/x/image v0.0.0-20200927104501-e162460cd6b5 // indirect
+	github.com/hajimehoshi/ebiten/v2 v2.4.12
+	golang.org/x/image v0.1.0 // indirect
 )
