@@ -72,7 +72,7 @@ func (g *Game) Update() error {
 					g.gameBoard[mx/160][my/160] = "X"
 					g.playing = "O"
 				}
-				g.wins(g.CheckWin())
+				g.setWinner(g.CheckWin())
 				g.round++
 			}
 		}
@@ -183,17 +183,17 @@ func (g *Game) Load() {
 	g.state = 1
 }
 
-func (g *Game) wins(winner string) {
-	if winner == "O" {
-		g.win = "O"
+func (g *Game) setWinner(winner string) {
+	g.win = winner
+	switch winner {
+	case "O":
 		g.pointsO++
-		g.state = 2
-	} else if winner == "X" {
-		g.win = "X"
+	case "X":
 		g.pointsX++
-		g.state = 2
-	} else if winner == "tie" {
+	case "tie":
 		g.win = "No one\n"
+	}
+	if winner != "" {
 		g.state = 2
 	}
 }
