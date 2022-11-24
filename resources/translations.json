@@ -1,0 +1,12 @@
+{
+  "fr-FR": {
+    "fallback": "NO_FALLBACK",
+    "test": "Ceci est un test !",
+    "hello": "Bonjour !"
+  },
+  "en-US": {
+    "fallback": "fr-FR",
+    "test": "This is a test !",
+    "hello": "Hello !"
+  }
+}

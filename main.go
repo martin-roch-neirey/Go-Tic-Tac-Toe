@@ -4,20 +4,20 @@ import (
 	"bytes"
 	"embed"
 	"fmt"
-	"image"
-	"image/color"
-	_ "image/png"
-	"log"
-	"math/rand"
-	"os"
-	"time"
-
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/examples/resources/fonts"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/text"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/opentype"
+	"image"
+	"image/color"
+	_ "image/png"
+	"log"
+	"math/rand"
+	"os"
+	"tictactoe/utils"
+	"time"
 )
 
 const (
@@ -98,7 +98,7 @@ func keyChangeColor(key ebiten.Key, screen *ebiten.Image) {
 			msgText = fmt.Sprintf("CLOSING...")
 			colorText = color.RGBA{R: 255, G: colorChange, B: colorChange, A: 255}
 		} else if key == ebiten.KeyR {
-			msgText = fmt.Sprintf("RESETING...")
+			msgText = fmt.Sprintf(utils.GetTranslation("test", "en-US"))
 			colorText = color.RGBA{R: colorChange, G: 255, B: 255, A: 255}
 		}
 		text.Draw(screen, msgText, normalText, sWidth/2, sHeight-30, colorText)
@@ -199,8 +199,6 @@ func (g *Game) CheckWin() string {
 		if g.gameBoard[i][0] == g.gameBoard[i][1] && g.gameBoard[i][1] == g.gameBoard[i][2] {
 			return g.gameBoard[i][0]
 		}
-	}
-	for i, _ := range g.gameBoard {
 		if g.gameBoard[0][i] == g.gameBoard[1][i] && g.gameBoard[1][i] == g.gameBoard[2][i] {
 			return g.gameBoard[0][i]
 		}
@@ -255,6 +253,8 @@ func main() {
 	game := &Game{}
 	ebiten.SetWindowSize(sWidth, sHeight)
 	ebiten.SetWindowTitle("TicTacToe")
+	// primes := []image.Image{ebitenutil.NewImageFromFileSystem("images/board.png")}
+	// ebiten.SetWindowIcon(primes)
 	if err := ebiten.RunGame(game); err != nil {
 		log.Fatal(err)
 	}
