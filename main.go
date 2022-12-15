@@ -27,7 +27,7 @@ const (
 
 type Symbol uint
 
-// Calcule via carré magique (1 - 4 - 16)
+// Calcule via carré magique ()
 const (
 	None   Symbol = 0
 	Cross  Symbol = 1
@@ -53,7 +53,8 @@ const (
 type Event uint
 
 const (
-	Quit Event = iota
+	Void Event = iota
+	Quit
 	Restart
 	Mouse
 )
@@ -82,11 +83,10 @@ type Game struct {
 func (g *Game) Update() error {
 
 	inputAction(g)
-	refreshInGame(g)
 
 	switch g.gameState {
 	case MainMenu:
-		//refreshMainMenu(g)
+		refreshMainMenu(g)
 	case Playing:
 		refreshInGame(g)
 	case Finished:
@@ -95,6 +95,7 @@ func (g *Game) Update() error {
 		//refreshPauseMenu(g)
 	}
 
+	g.playerInput.eventType = Void
 	return nil
 }
 
@@ -120,11 +121,13 @@ func getNowPlaying(g *Game) Symbol {
 	return Circle
 }
 
-func refreshInGame(g *Game) {
-
-	if getWinner(g) != None {
-		return
+func refreshMainMenu(g *Game) {
+	if g.playerInput.eventType == Mouse {
+		g.gameState = Playing
 	}
+}
+
+func refreshInGame(g *Game) {
 
 	if g.playerInput.eventType == Mouse {
 		// check if on game area
@@ -139,6 +142,14 @@ func refreshInGame(g *Game) {
 			// place a symbol
 			if g.gameBoard[pX][pY] == None {
 				g.gameBoard[pX][pY] = getNowPlaying(g)
+				if checkWinner(g, pX, pY, getNowPlaying(g)) {
+
+					var newBoard [3][3]Symbol
+					g.gameBoard = newBoard
+
+					g.gameState = MainMenu
+					return
+				}
 				g.currentTurn++
 			}
 
@@ -146,44 +157,39 @@ func refreshInGame(g *Game) {
 	}
 }
 
-func getWinner(g *Game) Symbol {
+func checkLine(g *Game, x int, y int, dx int, dy int, len int) bool {
+
 	var sum int
-	var sym int
 
-	for i := 0; i < 3; i++ {
-		sym = int(g.gameBoard[i][0])
-		sum = int(g.gameBoard[i][0]) + int(g.gameBoard[i][1]) + int(g.gameBoard[i][2])
-		if sum == (3 * sym) {
-			return g.gameBoard[i][0]
-		}
-		sym = int(g.gameBoard[0][i])
-		sum = int(g.gameBoard[0][i]) + int(g.gameBoard[1][i]) + int(g.gameBoard[2][i])
-		if sum == (3 * sym) {
-			return g.gameBoard[i][0]
-		}
+	for i := 0; i < len; i++ {
+		sum += int(g.gameBoard[x+(dx*i)][y+(dy*i)])
 	}
 
-	sym = int(g.gameBoard[1][1])
-	sum = int(g.gameBoard[0][0]) + int(g.gameBoard[1][1]) + int(g.gameBoard[2][2])
-	if sum == (3 * sym) {
-		return g.gameBoard[1][1]
+	if sum == 3 || sum == 12 {
+		return true
 	}
 
-	sum = int(g.gameBoard[0][2]) + int(g.gameBoard[1][1]) + int(g.gameBoard[2][0])
-	if sum == (3 * sym) {
-		return g.gameBoard[1][1]
-	}
+	return false
+}
 
-	return None
+func checkWinner(g *Game, x int, y int, sym Symbol) bool {
+	return false
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
 
-	screen.DrawImage(g.assets["map"], nil)
+	switch g.gameState {
+	case MainMenu:
+		text.Draw(screen, "TIC TAC TOE", g.fonts["title"], WINDOW_W/4, WINDOW_H/2.5, color.White)
+		g.DrawSymbol(0, 0, Cross, screen)
+		g.DrawSymbol(2, 2, Circle, screen)
+	case Playing:
+		screen.DrawImage(g.assets["map"], nil)
 
-	for x, array := range g.gameBoard {
-		for y, sym := range array {
-			g.DrawSymbol(x, y, sym, screen)
+		for x, array := range g.gameBoard {
+			for y, sym := range array {
+				g.DrawSymbol(x, y, sym, screen)
+			}
 		}
 	}
 
@@ -193,6 +199,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 }
 
 func (g *Game) DrawSymbol(x int, y int, sym Symbol, screen *ebiten.Image) {
+
 	opSymbol := &ebiten.DrawImageOptions{}
 	opSymbol.GeoM.Translate(float64(WINDOW_W/3)*float64(x), float64(WINDOW_W/3)*float64(y))
 
@@ -259,6 +266,21 @@ func (g *Game) GenerateFonts() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	g.fonts["title"], err = opentype.NewFace(tt, &opentype.FaceOptions{
+		Size:    40,
+		DPI:     72,
+		Hinting: font.HintingFull,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func (g *Game) InitGame() {
+	g.gameState = MainMenu
+	g.GenerateAssets()
+	g.GenerateFonts()
 }
 
 func (g *Game) Layout(outsideWidth int, outsideHeight int) (int, int) {
@@ -268,8 +290,7 @@ func (g *Game) Layout(outsideWidth int, outsideHeight int) (int, int) {
 
 func main() {
 	game := &Game{}
-	game.GenerateAssets()
-	game.GenerateFonts()
+	game.InitGame()
 
 	ebiten.SetWindowSize(WINDOW_W, WINDOW_H)
 	ebiten.SetWindowTitle("TicTacToe")
