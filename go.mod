@@ -4,6 +4,7 @@ go 1.19
 
 require (
 	github.com/fogleman/gg v1.3.0
+	github.com/go-sql-driver/mysql v1.7.0
 	github.com/hajimehoshi/ebiten/v2 v2.4.13
 	golang.org/x/image v0.1.0
 )
