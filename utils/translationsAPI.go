@@ -10,7 +10,7 @@ import (
 const translationsFile = "resources/translations.json"
 
 var translationsMap = make(map[string]interface{})
-var languageLoaded = "fr-FR"
+var languageLoaded = "fr-FR" // default language
 var loaded = false
 
 var fallbackCache = make(map[string]string)
@@ -19,7 +19,6 @@ func GetTranslation(id, lang string) string {
 	if !loaded || languageLoaded != lang {
 		loadTranslations(lang) // Todo get here language chosen by player
 		loaded = true
-		fmt.Println("accessed ")
 	}
 
 	var translation, ok = translationsMap[id]

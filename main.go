@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"embed"
 	"fmt"
+	"github.com/fogleman/gg"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/examples/resources/fonts"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -16,6 +17,7 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"strings"
 	"tictactoe/utils"
 	"time"
 )
@@ -32,6 +34,7 @@ const (
 //
 //go:embed images/*
 var imageFS embed.FS
+var Lang = "de-DE"
 
 var (
 	normalText  font.Face
@@ -95,10 +98,10 @@ func keyChangeColor(key ebiten.Key, screen *ebiten.Image) {
 		var colorText color.RGBA
 		colorChange := 255 - (255 / 60 * uint8(inpututil.KeyPressDuration(key)))
 		if key == ebiten.KeyEscape {
-			msgText = fmt.Sprintf("CLOSING...")
+			msgText = fmt.Sprintf(utils.GetTranslation("button_exiting", Lang))
 			colorText = color.RGBA{R: 255, G: colorChange, B: colorChange, A: 255}
 		} else if key == ebiten.KeyR {
-			msgText = fmt.Sprintf(utils.GetTranslation("test", "en-US"))
+			msgText = fmt.Sprintf(utils.GetTranslation("button_resetting", Lang))
 			colorText = color.RGBA{R: colorChange, G: 255, B: 255, A: 255}
 		}
 		text.Draw(screen, msgText, normalText, sWidth/2, sHeight-30, colorText)
@@ -119,7 +122,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	msgOX := fmt.Sprintf("O: %v | X: %v", g.pointsO, g.pointsX)
 	text.Draw(screen, msgOX, normalText, sWidth/2, sHeight-5, color.White)
 	if g.win != "" {
-		msgWin := fmt.Sprintf("%v wins!", g.win)
+		msgWin := fmt.Sprintf(strings.ReplaceAll(utils.GetTranslation("game_message_win", Lang), "{winner}", g.win))
 		text.Draw(screen, msgWin, bigText, 70, 200, color.RGBA{G: 50, B: 200, A: 255})
 	}
 	msg := fmt.Sprintf("%v", g.playing)
@@ -139,7 +142,13 @@ func (g *Game) DrawSymbol(x, y int, sym string) {
 	opSymbol := &ebiten.DrawImageOptions{}
 	opSymbol.GeoM.Translate(float64((160*(x+1)-160)+7), float64((160*(y+1)-160)+7))
 
-	gameImage.DrawImage(symbolImage, opSymbol)
+	dc := gg.NewContext(sWidth, sHeight)
+	dc.DrawCircle(float64(x), float64(y), 50)
+	dc.SetRGBA255(255, 255, 0, 255)
+	dc.Fill()
+	image := ebiten.NewImageFromImage(dc.Image())
+
+	gameImage.DrawImage(image, opSymbol)
 }
 
 func (g *Game) Init() {
@@ -249,10 +258,18 @@ func (g *Game) Layout(int, int) (int, int) {
 	return sWidth, sHeight
 }
 
+func draw() {
+	dc := gg.NewContext(1000, 1000)
+	dc.DrawCircle(500, 500, 400)
+	dc.SetRGB(255, 0, 0)
+	dc.SavePNG("out.png")
+}
+
 func main() {
+	draw()
 	game := &Game{}
 	ebiten.SetWindowSize(sWidth, sHeight)
-	ebiten.SetWindowTitle("TicTacToe")
+	ebiten.SetWindowTitle(utils.GetTranslation("game_window_name", Lang))
 	// primes := []image.Image{ebitenutil.NewImageFromFileSystem("images/board.png")}
 	// ebiten.SetWindowIcon(primes)
 	if err := ebiten.RunGame(game); err != nil {
