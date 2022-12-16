@@ -1,17 +1,13 @@
 package main
 
 import (
-	"bytes"
 	"embed"
 	"fmt"
-	"image"
 	"image/color"
 	_ "image/png"
 	"log"
-	"math/rand"
-	"os"
-	"time"
 
+	"github.com/fogleman/gg"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/examples/resources/fonts"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -21,224 +17,312 @@ import (
 )
 
 const (
-	sWidth      = 480
-	sHeight     = 600
-	fontSize    = 15
-	bigFontSize = 100
-	dpi         = 72
+	WINDOW_W       = 480
+	WINDOW_H       = 600
+	LINE_THICKNESS = 6
+	SYMBOL_SIZE    = 50
+	FONT_SIZE      = 15
+	KEY_PRESS_TIME = 60
 )
 
-// include repo images/* to binary file
+type Symbol uint
+
+// Calcule via carré magique ()
+const (
+	None   Symbol = 0
+	Cross  Symbol = 1
+	Circle Symbol = 4
+)
+
+type Mode uint
+
+const (
+	MultiPlayer Mode = iota
+	IA
+)
+
+type State uint
+
+const (
+	MainMenu State = iota
+	Playing
+	Finished
+	Pause
+)
+
+type Event uint
+
+const (
+	Void Event = iota
+	Quit
+	Restart
+	Mouse
+)
+
+type InputEvent struct {
+	eventType Event
+	mouseX    int
+	mouseY    int
+}
+
+// change to generate image
 //
 //go:embed images/*
 var imageFS embed.FS
 
-var (
-	normalText  font.Face
-	bigText     font.Face
-	boardImage  *ebiten.Image
-	symbolImage *ebiten.Image
-	textImage   = ebiten.NewImage(sWidth, sWidth)
-	gameImage   = ebiten.NewImage(sWidth, sWidth)
-)
-
 type Game struct {
-	playing   string
-	state     int
-	gameBoard [3][3]string
-	round     int
-	pointsO   int
-	pointsX   int
-	win       string
-	alter     int
+	assets      map[string]*ebiten.Image
+	fonts       map[string]font.Face
+	gameBoard   [3][3]Symbol
+	gameState   State
+	gameMode    Mode
+	playerInput InputEvent
+	currentTurn uint
 }
 
 func (g *Game) Update() error {
-	switch g.state {
-	case 0:
-		g.Init()
-		break
 
-	case 1:
-		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-			mx, my := ebiten.CursorPosition()
-			if mx/160 < 3 && mx >= 0 && my/160 < 3 && my >= 0 && g.gameBoard[mx/160][my/160] == "" {
-				if g.round%2 == 0+g.alter {
-					g.DrawSymbol(mx/160, my/160, "O")
-					g.gameBoard[mx/160][my/160] = "O"
-					g.playing = "X"
-				} else {
-					g.DrawSymbol(mx/160, my/160, "X")
-					g.gameBoard[mx/160][my/160] = "X"
-					g.playing = "O"
-				}
-				g.wins(g.CheckWin())
-				g.round++
-			}
-		}
-		break
-	case 2:
-		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-			g.Load()
-		}
-		break
+	inputAction(g)
+
+	switch g.gameState {
+	case MainMenu:
+		refreshMainMenu(g)
+	case Playing:
+		refreshInGame(g)
+	case Finished:
+		proceedEndGame(g)
+	case Pause:
+		//refreshPauseMenu(g)
 	}
-	if inpututil.KeyPressDuration(ebiten.KeyR) == 60 {
-		g.Load()
-		g.ResetPoints()
-	}
-	if inpututil.KeyPressDuration(ebiten.KeyEscape) == 60 {
-		os.Exit(0)
-	}
+
+	g.playerInput.eventType = Void
 	return nil
 }
 
-func keyChangeColor(key ebiten.Key, screen *ebiten.Image) {
-	if inpututil.KeyPressDuration(key) > 1 {
-		var msgText string
-		var colorText color.RGBA
-		colorChange := 255 - (255 / 60 * uint8(inpututil.KeyPressDuration(key)))
-		if key == ebiten.KeyEscape {
-			msgText = fmt.Sprintf("CLOSING...")
-			colorText = color.RGBA{R: 255, G: colorChange, B: colorChange, A: 255}
-		} else if key == ebiten.KeyR {
-			msgText = fmt.Sprintf("RESETING...")
-			colorText = color.RGBA{R: colorChange, G: 255, B: 255, A: 255}
-		}
-		text.Draw(screen, msgText, normalText, sWidth/2, sHeight-30, colorText)
+func inputAction(g *Game) {
+
+	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+		g.playerInput.eventType = Mouse
+		g.playerInput.mouseX, g.playerInput.mouseY = ebiten.CursorPosition()
 	}
+
+	if inpututil.KeyPressDuration(ebiten.KeyR) == KEY_PRESS_TIME {
+		g.playerInput.eventType = Restart
+	}
+	if inpututil.KeyPressDuration(ebiten.KeyEscape) == KEY_PRESS_TIME {
+		g.playerInput.eventType = Quit
+	}
+}
+
+func getNowPlaying(g *Game) Symbol {
+	if g.currentTurn%2 == 0 {
+		return Cross
+	}
+	return Circle
+}
+
+func refreshMainMenu(g *Game) {
+	if g.playerInput.eventType == Mouse {
+		g.gameState = Playing
+	}
+}
+
+func refreshInGame(g *Game) {
+
+	if g.playerInput.eventType == Mouse {
+		// check if on game area
+		if g.playerInput.mouseX > 0 &&
+			g.playerInput.mouseX < WINDOW_W &&
+			g.playerInput.mouseY > 0 &&
+			g.playerInput.mouseY < WINDOW_W {
+
+			pX := g.playerInput.mouseX / (WINDOW_W / 3)
+			pY := g.playerInput.mouseY / (WINDOW_W / 3)
+
+			// place a symbol
+			if g.gameBoard[pX][pY] == None {
+				g.gameBoard[pX][pY] = getNowPlaying(g)
+				if checkWinner(g, pX, pY, getNowPlaying(g)) {
+					g.gameState = Finished
+					return
+				}
+				g.currentTurn++
+
+				if g.gameMode == IA {
+					AIPlaceRandom(g)
+				}
+
+				if g.currentTurn > 8 {
+					g.gameState = Finished
+					return
+				}
+			}
+
+		}
+	}
+}
+
+func proceedEndGame(g *Game) {
+	if g.playerInput.eventType == Mouse {
+		var newBoard [3][3]Symbol
+		g.gameBoard = newBoard
+		g.currentTurn = 0
+		g.gameState = MainMenu
+	}
+}
+
+type Case struct {
+	X, Y int
+}
+
+func AIPlaceRandom(g *Game) {
+	// place a symbol
+	m := make(map[Case]int)
+
+	for x, array := range g.gameBoard {
+		for y, _ := range array {
+			if g.gameBoard[x][y] == None {
+				m[Case{x, y}] = 0
+			}
+		}
+	}
+
+	for k := range m {
+		g.gameBoard[k.X][k.Y] = getNowPlaying(g)
+		if checkWinner(g, k.X, k.Y, getNowPlaying(g)) {
+			g.gameState = Finished
+			return
+		}
+		g.currentTurn++
+		return
+	}
+}
+
+func checkWinner(g *Game, x int, y int, sym Symbol) bool {
+
+	sum := make([]int, 4)
+
+	for i := range g.gameBoard {
+		sum[0] += int(g.gameBoard[i][y])
+	}
+
+	for i := range g.gameBoard[x] {
+		sum[1] += int(g.gameBoard[x][i])
+	}
+
+	sum[2] = int(g.gameBoard[0][0]) + int(g.gameBoard[1][1]) + int(g.gameBoard[2][2])
+	sum[3] = int(g.gameBoard[0][2]) + int(g.gameBoard[1][1]) + int(g.gameBoard[2][0])
+
+	for _, v := range sum {
+		if int(v) == (int(sym) * 3) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
 
-	screen.DrawImage(boardImage, nil)
-	screen.DrawImage(gameImage, nil)
-	mx, my := ebiten.CursorPosition()
+	switch g.gameState {
+	case MainMenu:
+		text.Draw(screen, "TIC TAC TOE", g.fonts["title"], WINDOW_W/4, WINDOW_H/2.5, color.White)
+		g.DrawSymbol(0, 0, Cross, screen)
+		g.DrawSymbol(2, 2, Circle, screen)
+	case Playing:
+		g.DrawGameBoard(screen)
+
+	case Finished:
+		g.DrawGameBoard(screen)
+	}
 
 	msgFPS := fmt.Sprintf("TPS: %0.2f\nFPS: %0.2f", ebiten.CurrentTPS(), ebiten.CurrentFPS())
-	text.Draw(screen, msgFPS, normalText, 0, sHeight-30, color.White)
+	text.Draw(screen, msgFPS, g.fonts["normal"], 0, WINDOW_H-LINE_THICKNESS, color.White)
 
-	keyChangeColor(ebiten.KeyEscape, screen)
-	keyChangeColor(ebiten.KeyR, screen)
-	msgOX := fmt.Sprintf("O: %v | X: %v", g.pointsO, g.pointsX)
-	text.Draw(screen, msgOX, normalText, sWidth/2, sHeight-5, color.White)
-	if g.win != "" {
-		msgWin := fmt.Sprintf("%v wins!", g.win)
-		text.Draw(screen, msgWin, bigText, 70, 200, color.RGBA{G: 50, B: 200, A: 255})
-	}
-	msg := fmt.Sprintf("%v", g.playing)
-	text.Draw(screen, msg, normalText, mx, my, color.RGBA{G: 255, A: 255})
 }
 
-func (g *Game) DrawSymbol(x, y int, sym string) {
-	imageBytes, err := imageFS.ReadFile(fmt.Sprintf("images/%v.png", sym))
-	if err != nil {
-		log.Fatal(err)
+func (g *Game) DrawGameBoard(screen *ebiten.Image) {
+	screen.DrawImage(g.assets["map"], nil)
+
+	for x, array := range g.gameBoard {
+		for y, sym := range array {
+			g.DrawSymbol(x, y, sym, screen)
+		}
 	}
-	decoded, _, err := image.Decode(bytes.NewReader(imageBytes))
-	if err != nil {
-		log.Fatal(err)
-	}
-	symbolImage = ebiten.NewImageFromImage(decoded)
+}
+
+func (g *Game) DrawSymbol(x int, y int, sym Symbol, screen *ebiten.Image) {
+
 	opSymbol := &ebiten.DrawImageOptions{}
-	opSymbol.GeoM.Translate(float64((160*(x+1)-160)+7), float64((160*(y+1)-160)+7))
+	opSymbol.GeoM.Translate(float64(WINDOW_W/3)*float64(x), float64(WINDOW_W/3)*float64(y))
 
-	gameImage.DrawImage(symbolImage, opSymbol)
-}
-
-func (g *Game) Init() {
-	imageBytes, err := imageFS.ReadFile("images/board.png")
-	if err != nil {
-		log.Fatal(err)
-	}
-	decoded, _, err := image.Decode(bytes.NewReader(imageBytes))
-	if err != nil {
-		log.Fatal(err)
-	}
-	boardImage = ebiten.NewImageFromImage(decoded)
-	re := newRandom().Intn(2)
-	if re == 0 {
-		g.playing = "O"
-		g.alter = 0
-	} else {
-		g.playing = "X"
-		g.alter = 1
-	}
-	g.Load()
-	g.ResetPoints()
-}
-
-func (g *Game) Load() {
-	gameImage.Clear()
-	g.gameBoard = [3][3]string{{"", "", ""}, {"", "", ""}, {"", "", ""}}
-	g.round = 0
-	if g.alter == 0 {
-		g.playing = "X"
-		g.alter = 1
-	} else if g.alter == 1 {
-		g.playing = "O"
-		g.alter = 0
-	}
-	g.win = ""
-	g.state = 1
-}
-
-func (g *Game) wins(winner string) {
-	if winner == "O" {
-		g.win = "O"
-		g.pointsO++
-		g.state = 2
-	} else if winner == "X" {
-		g.win = "X"
-		g.pointsX++
-		g.state = 2
-	} else if winner == "tie" {
-		g.win = "No one\n"
-		g.state = 2
+	switch sym {
+	case Circle:
+		screen.DrawImage(g.assets["circle"], opSymbol)
+	case Cross:
+		screen.DrawImage(g.assets["cross"], opSymbol)
 	}
 }
 
-func (g *Game) CheckWin() string {
-	for i, _ := range g.gameBoard {
-		if g.gameBoard[i][0] == g.gameBoard[i][1] && g.gameBoard[i][1] == g.gameBoard[i][2] {
-			return g.gameBoard[i][0]
-		}
-	}
-	for i, _ := range g.gameBoard {
-		if g.gameBoard[0][i] == g.gameBoard[1][i] && g.gameBoard[1][i] == g.gameBoard[2][i] {
-			return g.gameBoard[0][i]
-		}
-	}
-	if (g.gameBoard[0][0] == g.gameBoard[1][1] && g.gameBoard[1][1] == g.gameBoard[2][2]) || (g.gameBoard[0][2] == g.gameBoard[1][1] && g.gameBoard[1][1] == g.gameBoard[2][0]) {
-		return g.gameBoard[1][1]
-	}
-	if g.round == 8 {
-		return "tie"
-	}
-	return ""
+func (g *Game) GenerateAssets() {
+	g.assets = make(map[string]*ebiten.Image)
+
+	// Generate MAP
+	img := gg.NewContext(WINDOW_W, WINDOW_W)
+	img.SetRGB(1, 1, 1)
+
+	img.DrawLine((WINDOW_W / 3), 0, (WINDOW_W / 3), WINDOW_W)
+	img.DrawLine((WINDOW_W/3)*2, 0, (WINDOW_W/3)*2, WINDOW_W)
+	img.DrawLine(0, (WINDOW_W / 3), WINDOW_W, (WINDOW_W / 3))
+	img.DrawLine(0, (WINDOW_W/3)*2, WINDOW_W, (WINDOW_W/3)*2)
+	img.SetLineWidth(float64(LINE_THICKNESS))
+	img.Stroke()
+
+	g.assets["map"] = ebiten.NewImageFromImage(img.Image())
+
+	// Generate Cross
+	symbolPos := float64((WINDOW_W / 3) / 2)
+	img = gg.NewContext(WINDOW_W/3, WINDOW_W/3)
+	img.SetRGB(1, 1, 1)
+
+	img.DrawLine(symbolPos-SYMBOL_SIZE, symbolPos-SYMBOL_SIZE, symbolPos+SYMBOL_SIZE, symbolPos+SYMBOL_SIZE)
+	img.DrawLine(symbolPos+SYMBOL_SIZE, symbolPos-SYMBOL_SIZE, symbolPos-SYMBOL_SIZE, symbolPos+SYMBOL_SIZE)
+	img.SetLineWidth(float64(LINE_THICKNESS))
+	img.Stroke()
+
+	g.assets["cross"] = ebiten.NewImageFromImage(img.Image())
+
+	// Generate Circle
+	img = gg.NewContext(WINDOW_W/3, WINDOW_W/3)
+	img.SetRGB(1, 1, 1)
+
+	img.DrawCircle(symbolPos, symbolPos, SYMBOL_SIZE)
+	img.SetLineWidth(float64(LINE_THICKNESS))
+	img.Stroke()
+
+	g.assets["circle"] = ebiten.NewImageFromImage(img.Image())
 }
 
-func (g *Game) ResetPoints() {
-	g.pointsO = 0
-	g.pointsX = 0
-}
+func (g *Game) GenerateFonts() {
+	g.fonts = make(map[string]font.Face)
 
-func init() {
 	tt, err := opentype.Parse(fonts.MPlus1pRegular_ttf)
 	if err != nil {
 		log.Fatal(err)
 	}
-	normalText, err = opentype.NewFace(tt, &opentype.FaceOptions{
-		Size:    fontSize,
-		DPI:     dpi,
+
+	g.fonts["normal"], err = opentype.NewFace(tt, &opentype.FaceOptions{
+		Size:    15,
+		DPI:     72,
 		Hinting: font.HintingFull,
 	})
 	if err != nil {
 		log.Fatal(err)
 	}
-	bigText, err = opentype.NewFace(tt, &opentype.FaceOptions{
-		Size:    bigFontSize,
-		DPI:     dpi,
+
+	g.fonts["title"], err = opentype.NewFace(tt, &opentype.FaceOptions{
+		Size:    40,
+		DPI:     72,
 		Hinting: font.HintingFull,
 	})
 	if err != nil {
@@ -246,18 +330,24 @@ func init() {
 	}
 }
 
-func newRandom() *rand.Rand {
-	s1 := rand.NewSource(time.Now().UnixNano())
-	return rand.New(s1)
+func (g *Game) InitGame() {
+	g.gameState = MainMenu
+	g.GenerateAssets()
+	g.GenerateFonts()
+
+	g.gameMode = IA
 }
 
-func (g *Game) Layout(int, int) (int, int) {
-	return sWidth, sHeight
+func (g *Game) Layout(outsideWidth int, outsideHeight int) (int, int) {
+
+	return WINDOW_W, WINDOW_H
 }
 
 func main() {
 	game := &Game{}
-	ebiten.SetWindowSize(sWidth, sHeight)
+	game.InitGame()
+
+	ebiten.SetWindowSize(WINDOW_W, WINDOW_H)
 	ebiten.SetWindowTitle("TicTacToe")
 	if err := ebiten.RunGame(game); err != nil {
 		log.Fatal(err)
