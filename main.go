@@ -291,7 +291,7 @@ func (g *Game) GenerateFonts() {
 	}
 
 	g.fonts["animated_size_1"], err = opentype.NewFace(tt, &opentype.FaceOptions{
-		Size:    33,
+		Size:    37.5,
 		DPI:     72,
 		Hinting: font.HintingFull,
 	})
@@ -301,7 +301,7 @@ func (g *Game) GenerateFonts() {
 	animatedFontList = append(animatedFontList, g.fonts["animated_size_1"])
 
 	g.fonts["animated_size_2"], err = opentype.NewFace(tt, &opentype.FaceOptions{
-		Size:    34,
+		Size:    38,
 		DPI:     72,
 		Hinting: font.HintingFull,
 	})
@@ -311,7 +311,7 @@ func (g *Game) GenerateFonts() {
 	animatedFontList = append(animatedFontList, g.fonts["animated_size_2"])
 
 	g.fonts["animated_size_3"], err = opentype.NewFace(tt, &opentype.FaceOptions{
-		Size:    35,
+		Size:    38.5,
 		DPI:     72,
 		Hinting: font.HintingFull,
 	})
@@ -321,7 +321,7 @@ func (g *Game) GenerateFonts() {
 	animatedFontList = append(animatedFontList, g.fonts["animated_size_3"])
 
 	g.fonts["animated_size_4"], err = opentype.NewFace(tt, &opentype.FaceOptions{
-		Size:    36,
+		Size:    39,
 		DPI:     72,
 		Hinting: font.HintingFull,
 	})
@@ -331,7 +331,7 @@ func (g *Game) GenerateFonts() {
 	animatedFontList = append(animatedFontList, g.fonts["animated_size_4"])
 
 	g.fonts["animated_size_5"], err = opentype.NewFace(tt, &opentype.FaceOptions{
-		Size:    37,
+		Size:    39.5,
 		DPI:     72,
 		Hinting: font.HintingFull,
 	})
@@ -341,7 +341,7 @@ func (g *Game) GenerateFonts() {
 	animatedFontList = append(animatedFontList, g.fonts["animated_size_5"])
 
 	g.fonts["animated_size_6"], err = opentype.NewFace(tt, &opentype.FaceOptions{
-		Size:    38,
+		Size:    40,
 		DPI:     72,
 		Hinting: font.HintingFull,
 	})
@@ -351,7 +351,7 @@ func (g *Game) GenerateFonts() {
 	animatedFontList = append(animatedFontList, g.fonts["animated_size_6"])
 
 	g.fonts["animated_size_7"], err = opentype.NewFace(tt, &opentype.FaceOptions{
-		Size:    39,
+		Size:    40.5,
 		DPI:     72,
 		Hinting: font.HintingFull,
 	})
@@ -361,7 +361,7 @@ func (g *Game) GenerateFonts() {
 	animatedFontList = append(animatedFontList, g.fonts["animated_size_7"])
 
 	g.fonts["animated_size_8"], err = opentype.NewFace(tt, &opentype.FaceOptions{
-		Size:    40,
+		Size:    41,
 		DPI:     72,
 		Hinting: font.HintingFull,
 	})
@@ -371,7 +371,7 @@ func (g *Game) GenerateFonts() {
 	animatedFontList = append(animatedFontList, g.fonts["animated_size_8"])
 
 	g.fonts["animated_size_9"], err = opentype.NewFace(tt, &opentype.FaceOptions{
-		Size:    41,
+		Size:    41.5,
 		DPI:     72,
 		Hinting: font.HintingFull,
 	})
@@ -424,7 +424,7 @@ func reverseFontsList(arr []font.Face) []font.Face {
 func (g *Game) processMainMenuAnimation() {
 	for {
 		setAnimatedSize()
-		time.Sleep(50 * time.Millisecond)
+		time.Sleep(40 * time.Millisecond)
 	}
 }
 
