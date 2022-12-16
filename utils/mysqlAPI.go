@@ -1,4 +1,4 @@
-package main
+package utils
 
 import (
 	"database/sql"
@@ -36,7 +36,7 @@ func UploadNewGame(gamemode string, winner int) {
 	defer closeDatabaseConnection(db)
 
 	var query string
-	query = "INSERT INTO games(gamemode, winner) VALUES('VAL1',VAL2);"
+	query = "INSERT INTO games(gamemode, winner, xMarks, oMarks, xWins, oWins) VALUES('VAL1', VAL2, 0, 0, 0, 0);"
 	query = strings.Replace(query, "VAL1", gamemode, 1)
 	query = strings.Replace(query, "VAL2", strconv.Itoa(winner), 1)
 
