@@ -90,7 +90,7 @@ func (g *Game) Update() error {
 	case Playing:
 		refreshInGame(g)
 	case Finished:
-		//proceedEndGame(g)
+		proceedEndGame(g)
 	case Pause:
 		//refreshPauseMenu(g)
 	}
@@ -143,36 +143,82 @@ func refreshInGame(g *Game) {
 			if g.gameBoard[pX][pY] == None {
 				g.gameBoard[pX][pY] = getNowPlaying(g)
 				if checkWinner(g, pX, pY, getNowPlaying(g)) {
-
-					var newBoard [3][3]Symbol
-					g.gameBoard = newBoard
-
-					g.gameState = MainMenu
+					g.gameState = Finished
 					return
 				}
 				g.currentTurn++
+
+				if g.gameMode == IA {
+					AIPlaceRandom(g)
+				}
+
+				if g.currentTurn > 8 {
+					g.gameState = Finished
+					return
+				}
 			}
 
 		}
 	}
 }
 
-func checkLine(g *Game, x int, y int, dx int, dy int, len int) bool {
+func proceedEndGame(g *Game) {
+	if g.playerInput.eventType == Mouse {
+		var newBoard [3][3]Symbol
+		g.gameBoard = newBoard
+		g.currentTurn = 0
+		g.gameState = MainMenu
+	}
+}
 
-	var sum int
+type Case struct {
+	X, Y int
+}
 
-	for i := 0; i < len; i++ {
-		sum += int(g.gameBoard[x+(dx*i)][y+(dy*i)])
+func AIPlaceRandom(g *Game) {
+	// place a symbol
+	m := make(map[Case]int)
+
+	for x, array := range g.gameBoard {
+		for y, _ := range array {
+			if g.gameBoard[x][y] == None {
+				m[Case{x, y}] = 0
+			}
+		}
 	}
 
-	if sum == 3 || sum == 12 {
-		return true
+	for k := range m {
+		g.gameBoard[k.X][k.Y] = getNowPlaying(g)
+		if checkWinner(g, k.X, k.Y, getNowPlaying(g)) {
+			g.gameState = Finished
+			return
+		}
+		g.currentTurn++
+		return
 	}
-
-	return false
 }
 
 func checkWinner(g *Game, x int, y int, sym Symbol) bool {
+
+	sum := make([]int, 4)
+
+	for i := range g.gameBoard {
+		sum[0] += int(g.gameBoard[i][y])
+	}
+
+	for i := range g.gameBoard[x] {
+		sum[1] += int(g.gameBoard[x][i])
+	}
+
+	sum[2] = int(g.gameBoard[0][0]) + int(g.gameBoard[1][1]) + int(g.gameBoard[2][2])
+	sum[3] = int(g.gameBoard[0][2]) + int(g.gameBoard[1][1]) + int(g.gameBoard[2][0])
+
+	for _, v := range sum {
+		if int(v) == (int(sym) * 3) {
+			return true
+		}
+	}
+
 	return false
 }
 
@@ -184,18 +230,25 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		g.DrawSymbol(0, 0, Cross, screen)
 		g.DrawSymbol(2, 2, Circle, screen)
 	case Playing:
-		screen.DrawImage(g.assets["map"], nil)
+		g.DrawGameBoard(screen)
 
-		for x, array := range g.gameBoard {
-			for y, sym := range array {
-				g.DrawSymbol(x, y, sym, screen)
-			}
-		}
+	case Finished:
+		g.DrawGameBoard(screen)
 	}
 
 	msgFPS := fmt.Sprintf("TPS: %0.2f\nFPS: %0.2f", ebiten.CurrentTPS(), ebiten.CurrentFPS())
 	text.Draw(screen, msgFPS, g.fonts["normal"], 0, WINDOW_H-LINE_THICKNESS, color.White)
 
+}
+
+func (g *Game) DrawGameBoard(screen *ebiten.Image) {
+	screen.DrawImage(g.assets["map"], nil)
+
+	for x, array := range g.gameBoard {
+		for y, sym := range array {
+			g.DrawSymbol(x, y, sym, screen)
+		}
+	}
 }
 
 func (g *Game) DrawSymbol(x int, y int, sym Symbol, screen *ebiten.Image) {
@@ -281,6 +334,8 @@ func (g *Game) InitGame() {
 	g.gameState = MainMenu
 	g.GenerateAssets()
 	g.GenerateFonts()
+
+	g.gameMode = IA
 }
 
 func (g *Game) Layout(outsideWidth int, outsideHeight int) (int, int) {
