@@ -32,6 +32,7 @@ var lang = "fr-FR"
 var animatedSize = 1
 var animatedFont font.Face
 var animatedFontList []font.Face
+var listPointer = 0
 
 type Symbol uint
 
@@ -290,7 +291,7 @@ func (g *Game) GenerateFonts() {
 	}
 
 	g.fonts["animated_size_1"], err = opentype.NewFace(tt, &opentype.FaceOptions{
-		Size:    30,
+		Size:    33,
 		DPI:     72,
 		Hinting: font.HintingFull,
 	})
@@ -300,24 +301,94 @@ func (g *Game) GenerateFonts() {
 	animatedFontList = append(animatedFontList, g.fonts["animated_size_1"])
 
 	g.fonts["animated_size_2"], err = opentype.NewFace(tt, &opentype.FaceOptions{
-		Size:    31,
+		Size:    34,
 		DPI:     72,
 		Hinting: font.HintingFull,
 	})
 	if err != nil {
 		log.Fatal(err)
 	}
-	animatedFontList = append(animatedFontList, g.fonts["animated_size_1"])
+	animatedFontList = append(animatedFontList, g.fonts["animated_size_2"])
 
 	g.fonts["animated_size_3"], err = opentype.NewFace(tt, &opentype.FaceOptions{
-		Size:    32,
+		Size:    35,
 		DPI:     72,
 		Hinting: font.HintingFull,
 	})
 	if err != nil {
 		log.Fatal(err)
 	}
-	animatedFontList = append(animatedFontList, g.fonts["animated_size_1"])
+	animatedFontList = append(animatedFontList, g.fonts["animated_size_3"])
+
+	g.fonts["animated_size_4"], err = opentype.NewFace(tt, &opentype.FaceOptions{
+		Size:    36,
+		DPI:     72,
+		Hinting: font.HintingFull,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	animatedFontList = append(animatedFontList, g.fonts["animated_size_4"])
+
+	g.fonts["animated_size_5"], err = opentype.NewFace(tt, &opentype.FaceOptions{
+		Size:    37,
+		DPI:     72,
+		Hinting: font.HintingFull,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	animatedFontList = append(animatedFontList, g.fonts["animated_size_5"])
+
+	g.fonts["animated_size_6"], err = opentype.NewFace(tt, &opentype.FaceOptions{
+		Size:    38,
+		DPI:     72,
+		Hinting: font.HintingFull,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	animatedFontList = append(animatedFontList, g.fonts["animated_size_6"])
+
+	g.fonts["animated_size_7"], err = opentype.NewFace(tt, &opentype.FaceOptions{
+		Size:    39,
+		DPI:     72,
+		Hinting: font.HintingFull,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	animatedFontList = append(animatedFontList, g.fonts["animated_size_7"])
+
+	g.fonts["animated_size_8"], err = opentype.NewFace(tt, &opentype.FaceOptions{
+		Size:    40,
+		DPI:     72,
+		Hinting: font.HintingFull,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	animatedFontList = append(animatedFontList, g.fonts["animated_size_8"])
+
+	g.fonts["animated_size_9"], err = opentype.NewFace(tt, &opentype.FaceOptions{
+		Size:    41,
+		DPI:     72,
+		Hinting: font.HintingFull,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	animatedFontList = append(animatedFontList, g.fonts["animated_size_9"])
+
+	g.fonts["animated_size_10"], err = opentype.NewFace(tt, &opentype.FaceOptions{
+		Size:    42,
+		DPI:     72,
+		Hinting: font.HintingFull,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	animatedFontList = append(animatedFontList, g.fonts["animated_size_10"])
 
 }
 
@@ -332,27 +403,28 @@ func (g *Game) Layout(outsideWidth int, outsideHeight int) (int, int) {
 	return WINDOW_W, WINDOW_H
 }
 
-func setAnimatedSize(g *Game) {
-	switch animatedSize {
-	case 1:
-		animatedSize = 2
-		animatedFont = g.fonts["animated_size_1"]
-	case 2:
-		animatedSize = 3
-		animatedFont = g.fonts["animated_size_2"]
-	case 3:
-		animatedSize = 4
-		animatedFont = g.fonts["animated_size_3"]
-	case 4:
-		animatedSize = 1
-		animatedFont = g.fonts["animated_size_2"]
+func setAnimatedSize() {
+	if listPointer == len(animatedFontList)-1 {
+		reverseFontsList(animatedFontList)
+		listPointer = 0
+		animatedFont = animatedFontList[listPointer]
+	} else {
+		listPointer++
+		animatedFont = animatedFontList[listPointer]
 	}
+}
+
+func reverseFontsList(arr []font.Face) []font.Face {
+	for i, j := 0, len(arr)-1; i < j; i, j = i+1, j-1 {
+		arr[i], arr[j] = arr[j], arr[i]
+	}
+	return arr
 }
 
 func (g *Game) processMainMenuAnimation() {
 	for {
-		setAnimatedSize(g)
-		time.Sleep(200 * time.Millisecond)
+		setAnimatedSize()
+		time.Sleep(50 * time.Millisecond)
 	}
 }
 
