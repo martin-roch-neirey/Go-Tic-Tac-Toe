@@ -4,10 +4,12 @@ import (
 	"GoTicTacToe/utils"
 	"bytes"
 	"embed"
+	"encoding/json"
 	"fmt"
 	"image"
 	"image/color"
 	_ "image/png"
+	"io/ioutil"
 	"log"
 	"strings"
 	"time"
@@ -71,9 +73,9 @@ const (
 )
 
 type InputEvent struct {
-	eventType Event
-	mouseX    int
-	mouseY    int
+	EventType Event
+	MouseX    int
+	MouseY    int
 }
 
 // change to generate image
@@ -82,86 +84,97 @@ type InputEvent struct {
 var imageFS embed.FS
 
 type Game struct {
-	assets      map[string]*ebiten.Image
-	fonts       map[string]font.Face
-	gameBoard   [3][3]Symbol
-	gameState   State
-	gameMode    Mode
-	playerInput InputEvent
-	currentTurn uint
+	Assets      map[string]*ebiten.Image
+	Fonts       map[string]font.Face
+	GameBoard   [3][3]Symbol
+	GameState   State
+	GameMode    Mode
+	PlayerInput InputEvent
+	CurrentTurn uint
+	XMarks      uint
+	OMarks      uint
+	XWins       uint
+	OWins       uint
 }
 
 func (g *Game) Update() error {
 
 	inputAction(g)
 
-	switch g.gameState {
+	switch g.GameState {
 	case MainMenu:
 		refreshMainMenu(g)
 	case Playing:
 		refreshInGame(g)
+
+		file, _ := json.MarshalIndent(g, "", " ")
+		_ = ioutil.WriteFile("test.json", file, 0644)
 	case Finished:
-		//proceedEndGame(g)
+		proceedEndGame(g)
 	case Pause:
 		//refreshPauseMenu(g)
 	}
 
-	g.playerInput.eventType = Void
+	g.PlayerInput.EventType = Void
 	return nil
+}
+
+func proceedEndGame(g *Game) {
+
 }
 
 func inputAction(g *Game) {
 
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-		g.playerInput.eventType = Mouse
-		g.playerInput.mouseX, g.playerInput.mouseY = ebiten.CursorPosition()
+		g.PlayerInput.EventType = Mouse
+		g.PlayerInput.MouseX, g.PlayerInput.MouseY = ebiten.CursorPosition()
 	}
 
 	if inpututil.KeyPressDuration(ebiten.KeyR) == KEY_PRESS_TIME {
-		g.playerInput.eventType = Restart
+		g.PlayerInput.EventType = Restart
 	}
 	if inpututil.KeyPressDuration(ebiten.KeyEscape) == KEY_PRESS_TIME {
-		g.playerInput.eventType = Quit
+		g.PlayerInput.EventType = Quit
 	}
 }
 
 func getNowPlaying(g *Game) Symbol {
-	if g.currentTurn%2 == 0 {
+	if g.CurrentTurn%2 == 0 {
 		return Cross
 	}
 	return Circle
 }
 
 func refreshMainMenu(g *Game) {
-	if g.playerInput.eventType == Mouse {
-		g.gameState = Playing
+	if g.PlayerInput.EventType == Mouse {
+		g.GameState = Playing
 	}
 }
 
 func refreshInGame(g *Game) {
 
-	if g.playerInput.eventType == Mouse {
+	if g.PlayerInput.EventType == Mouse {
 		// check if on game area
-		if g.playerInput.mouseX > 0 &&
-			g.playerInput.mouseX < WINDOW_W &&
-			g.playerInput.mouseY > 0 &&
-			g.playerInput.mouseY < WINDOW_W {
+		if g.PlayerInput.MouseX > 0 &&
+			g.PlayerInput.MouseX < WINDOW_W &&
+			g.PlayerInput.MouseY > 0 &&
+			g.PlayerInput.MouseY < WINDOW_W {
 
-			pX := g.playerInput.mouseX / (WINDOW_W / 3)
-			pY := g.playerInput.mouseY / (WINDOW_W / 3)
+			pX := g.PlayerInput.MouseX / (WINDOW_W / 3)
+			pY := g.PlayerInput.MouseY / (WINDOW_W / 3)
 
 			// place a symbol
-			if g.gameBoard[pX][pY] == None {
-				g.gameBoard[pX][pY] = getNowPlaying(g)
+			if g.GameBoard[pX][pY] == None {
+				g.GameBoard[pX][pY] = getNowPlaying(g)
 				if checkWinner(g, pX, pY, getNowPlaying(g)) {
 
 					var newBoard [3][3]Symbol
-					g.gameBoard = newBoard
+					g.GameBoard = newBoard
 
-					g.gameState = MainMenu
+					g.GameState = MainMenu
 					return
 				}
-				g.currentTurn++
+				g.CurrentTurn++
 			}
 
 		}
@@ -173,7 +186,7 @@ func checkLine(g *Game, x int, y int, dx int, dy int, len int) bool {
 	var sum int
 
 	for i := 0; i < len; i++ {
-		sum += int(g.gameBoard[x+(dx*i)][y+(dy*i)])
+		sum += int(g.GameBoard[x+(dx*i)][y+(dy*i)])
 	}
 
 	if sum == 3 || sum == 12 {
@@ -189,16 +202,16 @@ func checkWinner(g *Game, x int, y int, sym Symbol) bool {
 
 func (g *Game) Draw(screen *ebiten.Image) {
 
-	switch g.gameState {
+	switch g.GameState {
 	case MainMenu:
-		DrawCenteredText(screen, utils.GetTranslation("game_name", lang), g.fonts["title"], WINDOW_H/2.5, color.White)
+		DrawCenteredText(screen, utils.GetTranslation("game_name", lang), g.Fonts["title"], WINDOW_H/2.5, color.White)
 		DrawCenteredText(screen, utils.GetTranslation("click_to_play", lang), animatedFont, WINDOW_H/2, color.White)
 		g.DrawSymbol(0, 0, Cross, screen)
 		g.DrawSymbol(2, 2, Circle, screen)
 	case Playing:
-		screen.DrawImage(g.assets["map"], nil)
+		screen.DrawImage(g.Assets["map"], nil)
 
-		for x, array := range g.gameBoard {
+		for x, array := range g.GameBoard {
 			for y, sym := range array {
 				g.DrawSymbol(x, y, sym, screen)
 			}
@@ -210,7 +223,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	msgFPS = strings.Replace(msgFPS, "{fps}",
 		fmt.Sprintf("%0.2f", ebiten.CurrentFPS()), 1)
 
-	text.Draw(screen, msgFPS, g.fonts["normal"], 0, WINDOW_H-LINE_THICKNESS, color.White)
+	text.Draw(screen, msgFPS, g.Fonts["normal"], 0, WINDOW_H-LINE_THICKNESS, color.White)
 
 }
 
@@ -221,14 +234,14 @@ func (g *Game) DrawSymbol(x int, y int, sym Symbol, screen *ebiten.Image) {
 
 	switch sym {
 	case Circle:
-		screen.DrawImage(g.assets["circle"], opSymbol)
+		screen.DrawImage(g.Assets["circle"], opSymbol)
 	case Cross:
-		screen.DrawImage(g.assets["cross"], opSymbol)
+		screen.DrawImage(g.Assets["cross"], opSymbol)
 	}
 }
 
 func (g *Game) GenerateAssets() {
-	g.assets = make(map[string]*ebiten.Image)
+	g.Assets = make(map[string]*ebiten.Image)
 
 	// Generate MAP
 	img := gg.NewContext(WINDOW_W, WINDOW_W)
@@ -241,7 +254,7 @@ func (g *Game) GenerateAssets() {
 	img.SetLineWidth(float64(LINE_THICKNESS))
 	img.Stroke()
 
-	g.assets["map"] = ebiten.NewImageFromImage(img.Image())
+	g.Assets["map"] = ebiten.NewImageFromImage(img.Image())
 
 	// Generate Cross
 	symbolPos := float64((WINDOW_W / 3) / 2)
@@ -253,7 +266,7 @@ func (g *Game) GenerateAssets() {
 	img.SetLineWidth(float64(LINE_THICKNESS))
 	img.Stroke()
 
-	g.assets["cross"] = ebiten.NewImageFromImage(img.Image())
+	g.Assets["cross"] = ebiten.NewImageFromImage(img.Image())
 
 	// Generate Circle
 	img = gg.NewContext(WINDOW_W/3, WINDOW_W/3)
@@ -263,18 +276,18 @@ func (g *Game) GenerateAssets() {
 	img.SetLineWidth(float64(LINE_THICKNESS))
 	img.Stroke()
 
-	g.assets["circle"] = ebiten.NewImageFromImage(img.Image())
+	g.Assets["circle"] = ebiten.NewImageFromImage(img.Image())
 }
 
 func (g *Game) GenerateFonts() {
-	g.fonts = make(map[string]font.Face)
+	g.Fonts = make(map[string]font.Face)
 
 	tt, err := opentype.Parse(fonts.MPlus1pRegular_ttf)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	g.fonts["normal"], err = opentype.NewFace(tt, &opentype.FaceOptions{
+	g.Fonts["normal"], err = opentype.NewFace(tt, &opentype.FaceOptions{
 		Size:    15,
 		DPI:     72,
 		Hinting: font.HintingFull,
@@ -283,7 +296,7 @@ func (g *Game) GenerateFonts() {
 		log.Fatal(err)
 	}
 
-	g.fonts["title"], err = opentype.NewFace(tt, &opentype.FaceOptions{
+	g.Fonts["title"], err = opentype.NewFace(tt, &opentype.FaceOptions{
 		Size:    40,
 		DPI:     72,
 		Hinting: font.HintingFull,
@@ -292,7 +305,7 @@ func (g *Game) GenerateFonts() {
 		log.Fatal(err)
 	}
 
-	g.fonts["animated_size_1"], err = opentype.NewFace(tt, &opentype.FaceOptions{
+	g.Fonts["animated_size_1"], err = opentype.NewFace(tt, &opentype.FaceOptions{
 		Size:    37.5,
 		DPI:     72,
 		Hinting: font.HintingFull,
@@ -300,9 +313,9 @@ func (g *Game) GenerateFonts() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	animatedFontList = append(animatedFontList, g.fonts["animated_size_1"])
+	animatedFontList = append(animatedFontList, g.Fonts["animated_size_1"])
 
-	g.fonts["animated_size_2"], err = opentype.NewFace(tt, &opentype.FaceOptions{
+	g.Fonts["animated_size_2"], err = opentype.NewFace(tt, &opentype.FaceOptions{
 		Size:    38,
 		DPI:     72,
 		Hinting: font.HintingFull,
@@ -310,9 +323,9 @@ func (g *Game) GenerateFonts() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	animatedFontList = append(animatedFontList, g.fonts["animated_size_2"])
+	animatedFontList = append(animatedFontList, g.Fonts["animated_size_2"])
 
-	g.fonts["animated_size_3"], err = opentype.NewFace(tt, &opentype.FaceOptions{
+	g.Fonts["animated_size_3"], err = opentype.NewFace(tt, &opentype.FaceOptions{
 		Size:    38.5,
 		DPI:     72,
 		Hinting: font.HintingFull,
@@ -320,9 +333,9 @@ func (g *Game) GenerateFonts() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	animatedFontList = append(animatedFontList, g.fonts["animated_size_3"])
+	animatedFontList = append(animatedFontList, g.Fonts["animated_size_3"])
 
-	g.fonts["animated_size_4"], err = opentype.NewFace(tt, &opentype.FaceOptions{
+	g.Fonts["animated_size_4"], err = opentype.NewFace(tt, &opentype.FaceOptions{
 		Size:    39,
 		DPI:     72,
 		Hinting: font.HintingFull,
@@ -330,9 +343,9 @@ func (g *Game) GenerateFonts() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	animatedFontList = append(animatedFontList, g.fonts["animated_size_4"])
+	animatedFontList = append(animatedFontList, g.Fonts["animated_size_4"])
 
-	g.fonts["animated_size_5"], err = opentype.NewFace(tt, &opentype.FaceOptions{
+	g.Fonts["animated_size_5"], err = opentype.NewFace(tt, &opentype.FaceOptions{
 		Size:    39.5,
 		DPI:     72,
 		Hinting: font.HintingFull,
@@ -340,9 +353,9 @@ func (g *Game) GenerateFonts() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	animatedFontList = append(animatedFontList, g.fonts["animated_size_5"])
+	animatedFontList = append(animatedFontList, g.Fonts["animated_size_5"])
 
-	g.fonts["animated_size_6"], err = opentype.NewFace(tt, &opentype.FaceOptions{
+	g.Fonts["animated_size_6"], err = opentype.NewFace(tt, &opentype.FaceOptions{
 		Size:    40,
 		DPI:     72,
 		Hinting: font.HintingFull,
@@ -350,9 +363,9 @@ func (g *Game) GenerateFonts() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	animatedFontList = append(animatedFontList, g.fonts["animated_size_6"])
+	animatedFontList = append(animatedFontList, g.Fonts["animated_size_6"])
 
-	g.fonts["animated_size_7"], err = opentype.NewFace(tt, &opentype.FaceOptions{
+	g.Fonts["animated_size_7"], err = opentype.NewFace(tt, &opentype.FaceOptions{
 		Size:    40.5,
 		DPI:     72,
 		Hinting: font.HintingFull,
@@ -360,9 +373,9 @@ func (g *Game) GenerateFonts() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	animatedFontList = append(animatedFontList, g.fonts["animated_size_7"])
+	animatedFontList = append(animatedFontList, g.Fonts["animated_size_7"])
 
-	g.fonts["animated_size_8"], err = opentype.NewFace(tt, &opentype.FaceOptions{
+	g.Fonts["animated_size_8"], err = opentype.NewFace(tt, &opentype.FaceOptions{
 		Size:    41,
 		DPI:     72,
 		Hinting: font.HintingFull,
@@ -370,9 +383,9 @@ func (g *Game) GenerateFonts() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	animatedFontList = append(animatedFontList, g.fonts["animated_size_8"])
+	animatedFontList = append(animatedFontList, g.Fonts["animated_size_8"])
 
-	g.fonts["animated_size_9"], err = opentype.NewFace(tt, &opentype.FaceOptions{
+	g.Fonts["animated_size_9"], err = opentype.NewFace(tt, &opentype.FaceOptions{
 		Size:    41.5,
 		DPI:     72,
 		Hinting: font.HintingFull,
@@ -380,9 +393,9 @@ func (g *Game) GenerateFonts() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	animatedFontList = append(animatedFontList, g.fonts["animated_size_9"])
+	animatedFontList = append(animatedFontList, g.Fonts["animated_size_9"])
 
-	g.fonts["animated_size_10"], err = opentype.NewFace(tt, &opentype.FaceOptions{
+	g.Fonts["animated_size_10"], err = opentype.NewFace(tt, &opentype.FaceOptions{
 		Size:    42,
 		DPI:     72,
 		Hinting: font.HintingFull,
@@ -390,12 +403,12 @@ func (g *Game) GenerateFonts() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	animatedFontList = append(animatedFontList, g.fonts["animated_size_10"])
+	animatedFontList = append(animatedFontList, g.Fonts["animated_size_10"])
 
 }
 
 func (g *Game) InitGame() {
-	g.gameState = MainMenu
+	g.GameState = MainMenu
 	g.GenerateAssets()
 	g.GenerateFonts()
 	go g.processMainMenuAnimation()
@@ -461,4 +474,5 @@ func main() {
 	game := &Game{}
 	game.InitGame()
 	setupWindow(game)
+
 }
