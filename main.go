@@ -1,11 +1,13 @@
 package main
 
 import (
+	"GoTicTacToe/utils"
 	"embed"
 	"fmt"
 	"image/color"
 	_ "image/png"
 	"log"
+	"strings"
 
 	"github.com/fogleman/gg"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -24,6 +26,8 @@ const (
 	FONT_SIZE      = 15
 	KEY_PRESS_TIME = 60
 )
+
+var lang = "fr-FR"
 
 type Symbol uint
 
@@ -180,7 +184,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	switch g.gameState {
 	case MainMenu:
-		text.Draw(screen, "TIC TAC TOE", g.fonts["title"], WINDOW_W/4, WINDOW_H/2.5, color.White)
+		text.Draw(screen, utils.GetTranslation("game_name", lang), g.fonts["title"], WINDOW_W/4, WINDOW_H/2.5, color.White)
 		g.DrawSymbol(0, 0, Cross, screen)
 		g.DrawSymbol(2, 2, Circle, screen)
 	case Playing:
@@ -193,7 +197,11 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		}
 	}
 
-	msgFPS := fmt.Sprintf("TPS: %0.2f\nFPS: %0.2f", ebiten.CurrentTPS(), ebiten.CurrentFPS())
+	msgFPS := strings.Replace(utils.GetTranslation("tps_fps", lang), "{tps}",
+		fmt.Sprintf("%0.2f", ebiten.CurrentTPS()), 1)
+	msgFPS = strings.Replace(msgFPS, "{fps}",
+		fmt.Sprintf("%0.2f", ebiten.CurrentFPS()), 1)
+
 	text.Draw(screen, msgFPS, g.fonts["normal"], 0, WINDOW_H-LINE_THICKNESS, color.White)
 
 }
@@ -293,7 +301,7 @@ func main() {
 	game.InitGame()
 
 	ebiten.SetWindowSize(WINDOW_W, WINDOW_H)
-	ebiten.SetWindowTitle("TicTacToe")
+	ebiten.SetWindowTitle(utils.GetTranslation("game_window_name", lang))
 	if err := ebiten.RunGame(game); err != nil {
 		log.Fatal(err)
 	}
