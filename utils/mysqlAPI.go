@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
-	"strconv"
 	"strings"
+	"time"
 )
 
 func getDatabaseConnection() *sql.DB {
@@ -31,14 +31,14 @@ func GetGamesCount() int {
 	return count
 }
 
-func UploadNewGame(gamemode string, winner int) {
+func UploadNewGame(json string) {
 	db := getDatabaseConnection()
 	defer closeDatabaseConnection(db)
 
 	var query string
-	query = "INSERT INTO games(gamemode, winner, xMarks, oMarks, xWins, oWins) VALUES('VAL1', VAL2, 0, 0, 0, 0);"
-	query = strings.Replace(query, "VAL1", gamemode, 1)
-	query = strings.Replace(query, "VAL2", strconv.Itoa(winner), 1)
+	query = "INSERT INTO games3(date, properties) VALUES('VAL1', 'VAL2');"
+	query = strings.Replace(query, "VAL1", time.Now().Format("2006-01-02 15-04-05"), 1)
+	query = strings.Replace(query, "VAL2", json, 1)
 
 	fmt.Println(query)
 
@@ -55,10 +55,10 @@ func closeDatabaseConnection(db *sql.DB) {
 	}
 }
 
-func main() {
-	UploadNewGame("test", 91)
+func main() { // to test, change package to main in this file and all files of the folder utils
+	UploadNewGame("{}")
 	fmt.Println(GetGamesCount())
 
-	UploadNewGame("test2", 863)
+	UploadNewGame("{}")
 	fmt.Println(GetGamesCount())
 }

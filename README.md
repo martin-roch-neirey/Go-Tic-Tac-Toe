@@ -15,20 +15,11 @@
 ## MySQL infos
 
 ```mysql
-CREATE TABLE games(id INT PRIMARY KEY AUTO_INCREMENT, gamemode VARCHAR(255), winner INT);
-INSERT INTO games(gamemode, winner) VALUES('MultiPlayer', 0);
-INSERT INTO games(gamemode, winner) VALUES('IA', 0);
-INSERT INTO games(gamemode, winner) VALUES('IA', 2);
-INSERT INTO games(gamemode, winner) VALUES('IA', 0);
-INSERT INTO games(gamemode, winner) VALUES('IA', 2);
-INSERT INTO games(gamemode, winner) VALUES('IA', 1);
-INSERT INTO games(gamemode, winner) VALUES('IA', 1);
-INSERT INTO games(gamemode, winner) VALUES('MultiPlayer', 0);
-INSERT INTO games(gamemode, winner) VALUES('MultiPlayer', 0);
-INSERT INTO games(gamemode, winner) VALUES('MultiPlayer', 1);
-INSERT INTO games(gamemode, winner) VALUES('MultiPlayer', 0);
-INSERT INTO games(gamemode, winner) VALUES('MultiPlayer', 0);
-INSERT INTO games(gamemode, winner) VALUES('MultiPlayer', 2);
+CREATE TABLE games3(
+                       id int auto_increment primary key,
+                       date datetime,
+                       properties json
+);
 ```
 
 winner values :

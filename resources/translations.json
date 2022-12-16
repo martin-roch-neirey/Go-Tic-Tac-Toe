@@ -7,7 +7,8 @@
     "game_message_win": "{winner}\na\ngagné !",
     "button_resetting": "Ceci est un test !",
     "button_exiting": "Bonjour !",
-    "tps_fps": "TPS: {tps} | FPS: {fps}"
+    "tps_fps": "TPS: {tps} | FPS: {fps}",
+    "marks": "X symboles: {xMarks} | O symboles: {oMarks}"
   },
   "en-US": {
     "fallback": "fr-FR",
@@ -16,6 +17,6 @@
   },
   "de-DE": {
     "fallback": "en-US",
-    "game_message_win": "{winner}\ngewin !"
+    "game_message_win": "{winner}\nhat gewonnen !"
   }
 }

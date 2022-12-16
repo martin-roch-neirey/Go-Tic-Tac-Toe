@@ -4,6 +4,7 @@ import (
 	"GoTicTacToe/utils"
 	"bytes"
 	"embed"
+	"encoding/json"
 	"fmt"
 	"image"
 	"image/color"
@@ -35,6 +36,9 @@ var animatedSize = 1
 var animatedFont font.Face
 var animatedFontList []font.Face
 var listPointer = 0
+
+var sql = false // TODO delete later, set to false if DB is not online
+var sqlProceed = false
 
 type Symbol uint
 
@@ -91,8 +95,7 @@ type Game struct {
 	CurrentTurn uint
 	XMarks      uint
 	OMarks      uint
-	XWins       uint
-	OWins       uint
+	Winner      string
 }
 
 func (g *Game) Update() error {
@@ -157,6 +160,7 @@ func refreshInGame(g *Game) {
 			// place a symbol
 			if g.GameBoard[pX][pY] == None {
 				g.GameBoard[pX][pY] = getNowPlaying(g)
+				incrementMarksCounter(g)
 				if checkWinner(g, pX, pY, getNowPlaying(g)) {
 					g.GameState = Finished
 					return
@@ -177,12 +181,30 @@ func refreshInGame(g *Game) {
 	}
 }
 
+func incrementMarksCounter(g *Game) {
+	if getNowPlaying(g) == Cross {
+		g.XMarks++
+	} else {
+		g.OMarks++
+	}
+}
+
 func proceedEndGame(g *Game) {
+	g.CurrentTurn++
+	if sql && !sqlProceed {
+		jsonAsBytes, _ := json.Marshal(g)
+		jsonString := string(jsonAsBytes[:])
+		utils.UploadNewGame(jsonString)
+		sqlProceed = true
+	}
 	if g.PlayerInput.eventType == Mouse {
 		var newBoard [3][3]Symbol
 		g.GameBoard = newBoard
 		g.CurrentTurn = 0
+		g.XMarks = 0
+		g.OMarks = 0
 		g.GameState = MainMenu
+		sqlProceed = false
 	}
 }
 
@@ -204,6 +226,7 @@ func AIPlaceRandom(g *Game) {
 
 	for k := range m {
 		g.GameBoard[k.X][k.Y] = getNowPlaying(g)
+		incrementMarksCounter(g)
 		if checkWinner(g, k.X, k.Y, getNowPlaying(g)) {
 			g.GameState = Finished
 			return
@@ -257,6 +280,13 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	msgFPS = strings.Replace(msgFPS, "{fps}",
 		fmt.Sprintf("%0.2f", ebiten.CurrentFPS()), 1)
 	text.Draw(screen, msgFPS, g.Fonts["normal"], 0, WINDOW_H-LINE_THICKNESS, color.White)
+
+	msgMarks := strings.Replace(utils.GetTranslation("marks", lang), "{xMarks}",
+		fmt.Sprintf("%v", g.XMarks), 1)
+	msgMarks = strings.Replace(msgMarks, "{oMarks}",
+		fmt.Sprintf("%v", g.OMarks), 1)
+	DrawCenteredText(screen, msgMarks, g.Fonts["normal"], WINDOW_H-10*LINE_THICKNESS, color.White)
+	// text.Draw(screen, msgMarks, g.Fonts["normal"], 0, WINDOW_H-LINE_THICKNESS, color.White)
 
 }
 
@@ -455,7 +485,7 @@ func (g *Game) InitGame() {
 	g.GenerateAssets()
 	g.GenerateFonts()
 	go g.processMainMenuAnimation()
-	g.GameMode = IA
+	g.GameMode = MultiPlayer
 }
 
 func (g *Game) Layout(outsideWidth int, outsideHeight int) (int, int) {
