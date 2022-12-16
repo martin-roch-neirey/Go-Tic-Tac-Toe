@@ -2,8 +2,10 @@ package main
 
 import (
 	"GoTicTacToe/utils"
+	"bytes"
 	"embed"
 	"fmt"
+	"image"
 	"image/color"
 	_ "image/png"
 	"log"
@@ -434,13 +436,29 @@ func DrawCenteredText(screen *ebiten.Image, s string, font font.Face, height int
 	text.Draw(screen, s, font, x, y, color)
 }
 
+func setupWindow(g *Game) {
+	ebiten.SetWindowSize(WINDOW_W, WINDOW_H)
+	var favicon []image.Image
+
+	imageBytes, err := imageFS.ReadFile("images/tic-tac-toe.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+	decoded, _, err := image.Decode(bytes.NewReader(imageBytes))
+	if err != nil {
+		log.Fatal(err)
+	}
+	favicon = append(favicon, decoded)
+
+	ebiten.SetWindowIcon(favicon)
+	ebiten.SetWindowTitle(utils.GetTranslation("game_window_name", lang))
+	if err := ebiten.RunGame(g); err != nil {
+		log.Fatal(err)
+	}
+}
+
 func main() {
 	game := &Game{}
 	game.InitGame()
-
-	ebiten.SetWindowSize(WINDOW_W, WINDOW_H)
-	ebiten.SetWindowTitle(utils.GetTranslation("game_window_name", lang))
-	if err := ebiten.RunGame(game); err != nil {
-		log.Fatal(err)
-	}
+	setupWindow(game)
 }
