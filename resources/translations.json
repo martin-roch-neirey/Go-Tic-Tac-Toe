@@ -2,6 +2,7 @@
   "fr-FR": {
     "fallback": "NO_FALLBACK",
     "game_window_name": "Tic Tac Toe 2.0",
+    "click_to_play": "Cliquez pour jouer !",
     "game_name": "Tic Tac Toe",
     "game_message_win": "{winner}\na\ngagné !",
     "button_resetting": "Ceci est un test !",

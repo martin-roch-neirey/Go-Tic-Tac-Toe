@@ -8,6 +8,7 @@ import (
 	_ "image/png"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/fogleman/gg"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -28,6 +29,9 @@ const (
 )
 
 var lang = "fr-FR"
+var animatedSize = 1
+var animatedFont font.Face
+var animatedFontList []font.Face
 
 type Symbol uint
 
@@ -184,7 +188,8 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	switch g.gameState {
 	case MainMenu:
-		text.Draw(screen, utils.GetTranslation("game_name", lang), g.fonts["title"], WINDOW_W/4, WINDOW_H/2.5, color.White)
+		DrawCenteredText(screen, utils.GetTranslation("game_name", lang), g.fonts["title"], WINDOW_H/2.5, color.White)
+		DrawCenteredText(screen, utils.GetTranslation("click_to_play", lang), animatedFont, WINDOW_H/2, color.White)
 		g.DrawSymbol(0, 0, Cross, screen)
 		g.DrawSymbol(2, 2, Circle, screen)
 	case Playing:
@@ -283,17 +288,78 @@ func (g *Game) GenerateFonts() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	g.fonts["animated_size_1"], err = opentype.NewFace(tt, &opentype.FaceOptions{
+		Size:    30,
+		DPI:     72,
+		Hinting: font.HintingFull,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	animatedFontList = append(animatedFontList, g.fonts["animated_size_1"])
+
+	g.fonts["animated_size_2"], err = opentype.NewFace(tt, &opentype.FaceOptions{
+		Size:    31,
+		DPI:     72,
+		Hinting: font.HintingFull,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	animatedFontList = append(animatedFontList, g.fonts["animated_size_1"])
+
+	g.fonts["animated_size_3"], err = opentype.NewFace(tt, &opentype.FaceOptions{
+		Size:    32,
+		DPI:     72,
+		Hinting: font.HintingFull,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	animatedFontList = append(animatedFontList, g.fonts["animated_size_1"])
+
 }
 
 func (g *Game) InitGame() {
 	g.gameState = MainMenu
 	g.GenerateAssets()
 	g.GenerateFonts()
+	go g.processMainMenuAnimation()
 }
 
 func (g *Game) Layout(outsideWidth int, outsideHeight int) (int, int) {
-
 	return WINDOW_W, WINDOW_H
+}
+
+func setAnimatedSize(g *Game) {
+	switch animatedSize {
+	case 1:
+		animatedSize = 2
+		animatedFont = g.fonts["animated_size_1"]
+	case 2:
+		animatedSize = 3
+		animatedFont = g.fonts["animated_size_2"]
+	case 3:
+		animatedSize = 4
+		animatedFont = g.fonts["animated_size_3"]
+	case 4:
+		animatedSize = 1
+		animatedFont = g.fonts["animated_size_2"]
+	}
+}
+
+func (g *Game) processMainMenuAnimation() {
+	for {
+		setAnimatedSize(g)
+		time.Sleep(200 * time.Millisecond)
+	}
+}
+
+func DrawCenteredText(screen *ebiten.Image, s string, font font.Face, height int, color color.Color) {
+	bounds := text.BoundString(font, s)
+	x, y := WINDOW_W/2-bounds.Min.X-bounds.Dx()/2, height-bounds.Min.Y-bounds.Dy()/2
+	text.Draw(screen, s, font, x, y, color)
 }
 
 func main() {
