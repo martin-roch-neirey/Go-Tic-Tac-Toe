@@ -1,9 +1,9 @@
 package main
 
 import (
-	"GoTicTacToe/utils"
+	"GoTicTacToe/pkg/api"
+	"GoTicTacToe/resources"
 	"bytes"
-	"embed"
 	"encoding/json"
 	"fmt"
 	"image"
@@ -79,11 +79,6 @@ type InputEvent struct {
 	mouseX    int
 	mouseY    int
 }
-
-// change to generate image
-//
-//go:embed images/*
-var imageFS embed.FS
 
 type Game struct {
 	Assets      map[string]*ebiten.Image
@@ -194,7 +189,7 @@ func proceedEndGame(g *Game) {
 	if sql && !sqlProceed {
 		jsonAsBytes, _ := json.Marshal(g)
 		jsonString := string(jsonAsBytes[:])
-		utils.UploadNewGame(jsonString)
+		api.UploadNewGame(jsonString)
 		sqlProceed = true
 	}
 	if g.PlayerInput.eventType == Mouse {
@@ -265,7 +260,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	switch g.GameState {
 	case MainMenu:
 		text.Draw(screen, "TIC TAC TOE", g.Fonts["title"], WINDOW_W/4, WINDOW_H/2.5, color.White)
-		DrawCenteredText(screen, utils.GetTranslation("click_to_play", lang), animatedFont, WINDOW_H/2, color.White)
+		DrawCenteredText(screen, api.GetTranslation("click_to_play", lang), animatedFont, WINDOW_H/2, color.White)
 		g.DrawSymbol(0, 0, Cross, screen)
 		g.DrawSymbol(2, 2, Circle, screen)
 	case Playing:
@@ -276,13 +271,13 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		g.DrawWinBar(screen)
 	}
 
-	msgFPS := strings.Replace(utils.GetTranslation("tps_fps", lang), "{tps}",
+	msgFPS := strings.Replace(api.GetTranslation("tps_fps", lang), "{tps}",
 		fmt.Sprintf("%0.2f", ebiten.CurrentTPS()), 1)
 	msgFPS = strings.Replace(msgFPS, "{fps}",
 		fmt.Sprintf("%0.2f", ebiten.CurrentFPS()), 1)
 	text.Draw(screen, msgFPS, g.Fonts["normal"], 0, WINDOW_H-LINE_THICKNESS, color.White)
 
-	msgMarks := strings.Replace(utils.GetTranslation("marks", lang), "{xMarks}",
+	msgMarks := strings.Replace(api.GetTranslation("marks", lang), "{xMarks}",
 		fmt.Sprintf("%v", g.XMarks), 1)
 	msgMarks = strings.Replace(msgMarks, "{oMarks}",
 		fmt.Sprintf("%v", g.OMarks), 1)
@@ -582,7 +577,7 @@ func setupWindow(g *Game) {
 	ebiten.SetWindowSize(WINDOW_W, WINDOW_H)
 	var favicon []image.Image
 
-	imageBytes, err := imageFS.ReadFile("images/tic-tac-toe.png")
+	imageBytes, err := resources.ImageFS.ReadFile("images/tic-tac-toe.png")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -593,7 +588,7 @@ func setupWindow(g *Game) {
 	favicon = append(favicon, decoded)
 
 	ebiten.SetWindowIcon(favicon)
-	ebiten.SetWindowTitle(utils.GetTranslation("game_window_name", lang))
+	ebiten.SetWindowTitle(api.GetTranslation("game_window_name", lang))
 	if err := ebiten.RunGame(g); err != nil {
 		log.Fatal(err)
 	}
