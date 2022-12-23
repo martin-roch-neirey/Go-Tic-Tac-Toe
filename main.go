@@ -273,6 +273,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	case Finished:
 		g.DrawGameBoard(screen)
+		g.DrawWinBar(screen)
 	}
 
 	msgFPS := strings.Replace(utils.GetTranslation("tps_fps", lang), "{tps}",
@@ -313,6 +314,28 @@ func (g *Game) DrawSymbol(x int, y int, sym Symbol, screen *ebiten.Image) {
 	}
 }
 
+func (g *Game) DrawWinBar(screen *ebiten.Image) {
+
+	opSymbol := &ebiten.DrawImageOptions{}
+	pos := 1
+	v := 2
+
+	switch v {
+	case 0:
+		opSymbol.GeoM.Translate(0, float64(WINDOW_W/3)*float64(pos))
+		screen.DrawImage(g.Assets["win_bar_h"], opSymbol)
+
+	case 1:
+		opSymbol.GeoM.Translate(float64(WINDOW_W/3)*float64(pos), 0)
+		screen.DrawImage(g.Assets["win_bar_v"], opSymbol)
+
+	case 2:
+		screen.DrawImage(g.Assets["win_bar_d1"], opSymbol)
+		screen.DrawImage(g.Assets["win_bar_d2"], opSymbol)
+	}
+
+}
+
 func (g *Game) GenerateAssets() {
 	g.Assets = make(map[string]*ebiten.Image)
 
@@ -350,6 +373,37 @@ func (g *Game) GenerateAssets() {
 	img.Stroke()
 
 	g.Assets["circle"] = ebiten.NewImageFromImage(img.Image())
+
+	img = gg.NewContext(WINDOW_W/3, WINDOW_W)
+	img.SetRGB(1, 1, 1)
+	img.DrawRectangle(symbolPos-LINE_THICKNESS/2, LINE_THICKNESS, LINE_THICKNESS, WINDOW_W-LINE_THICKNESS)
+	img.Fill()
+
+	g.Assets["win_bar_v"] = ebiten.NewImageFromImage(img.Image())
+
+	img = gg.NewContext(WINDOW_W, WINDOW_W/3)
+	img.SetRGB(1, 1, 1)
+	img.DrawRectangle(LINE_THICKNESS, symbolPos-(LINE_THICKNESS/2), WINDOW_W-LINE_THICKNESS, LINE_THICKNESS)
+	img.Fill()
+
+	g.Assets["win_bar_h"] = ebiten.NewImageFromImage(img.Image())
+
+	img = gg.NewContext(WINDOW_W, WINDOW_W)
+	img.SetRGB(1, 1, 1)
+	img.DrawLine(2*LINE_THICKNESS, 2*LINE_THICKNESS, WINDOW_W-(2*LINE_THICKNESS), WINDOW_W-(2*LINE_THICKNESS))
+	img.SetLineWidth(float64(LINE_THICKNESS))
+	img.Stroke()
+
+	g.Assets["win_bar_d1"] = ebiten.NewImageFromImage(img.Image())
+
+	img = gg.NewContext(WINDOW_W, WINDOW_W)
+	img.SetRGB(1, 1, 1)
+	img.DrawLine(WINDOW_W-(2*LINE_THICKNESS), 2*LINE_THICKNESS, (2 * LINE_THICKNESS), WINDOW_W-(2*LINE_THICKNESS))
+	img.SetLineWidth(float64(LINE_THICKNESS))
+	img.Stroke()
+
+	g.Assets["win_bar_d2"] = ebiten.NewImageFromImage(img.Image())
+
 }
 
 func (g *Game) GenerateFonts() {
@@ -485,7 +539,7 @@ func (g *Game) InitGame() {
 	g.GenerateAssets()
 	g.GenerateFonts()
 	go g.processMainMenuAnimation()
-	g.GameMode = MultiPlayer
+	g.GameMode = IA
 }
 
 func (g *Game) Layout(outsideWidth int, outsideHeight int) (int, int) {
