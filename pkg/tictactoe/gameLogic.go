@@ -10,36 +10,39 @@ import (
 
 func (g *Game) Update() error {
 
-	inputAction(g)
+	playerInput := GetInputs()
 
 	switch g.GameState {
 	case MainMenu:
-		refreshMainMenu(g)
+		refreshMainMenu(g, playerInput)
 	case Playing:
-		refreshInGame(g)
+		refreshInGame(g, playerInput)
 	case Finished:
-		proceedEndGame(g)
+		proceedEndGame(g, playerInput)
 	case Pause:
 		//refreshPauseMenu(g)
 	}
 
-	g.PlayerInput.eventType = Void
 	return nil
 }
 
-func inputAction(g *Game) {
+func GetInputs() InputEvent {
+
+	input := InputEvent{Event(None), 0, 0}
 
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-		g.PlayerInput.eventType = Mouse
-		g.PlayerInput.mouseX, g.PlayerInput.mouseY = ebiten.CursorPosition()
+		input.eventType = Mouse
+		input.mouseX, input.mouseY = ebiten.CursorPosition()
 	}
 
 	if inpututil.KeyPressDuration(ebiten.KeyR) == KEY_PRESS_TIME {
-		g.PlayerInput.eventType = Restart
+		input.eventType = Restart
 	}
 	if inpututil.KeyPressDuration(ebiten.KeyEscape) == KEY_PRESS_TIME {
-		g.PlayerInput.eventType = Quit
+		input.eventType = Quit
 	}
+
+	return input
 }
 
 func getNowPlaying(g *Game) Symbol {
@@ -49,23 +52,23 @@ func getNowPlaying(g *Game) Symbol {
 	return Circle
 }
 
-func refreshMainMenu(g *Game) {
-	if g.PlayerInput.eventType == Mouse {
+func refreshMainMenu(g *Game, input InputEvent) {
+	if input.eventType == Mouse {
 		g.GameState = Playing
 	}
 }
 
-func refreshInGame(g *Game) {
+func refreshInGame(g *Game, input InputEvent) {
 
-	if g.PlayerInput.eventType == Mouse {
+	if input.eventType == Mouse {
 		// check if on game area
-		if g.PlayerInput.mouseX > 0 &&
-			g.PlayerInput.mouseX < WINDOW_W &&
-			g.PlayerInput.mouseY > 0 &&
-			g.PlayerInput.mouseY < WINDOW_W {
+		if input.mouseX > 0 &&
+			input.mouseX < WINDOW_W &&
+			input.mouseY > 0 &&
+			input.mouseY < WINDOW_W {
 
-			pX := g.PlayerInput.mouseX / (WINDOW_W / 3)
-			pY := g.PlayerInput.mouseY / (WINDOW_W / 3)
+			pX := input.mouseX / (WINDOW_W / 3)
+			pY := input.mouseY / (WINDOW_W / 3)
 
 			// place a symbol
 			if g.GameBoard[pX][pY] == None {
@@ -94,15 +97,7 @@ func refreshInGame(g *Game) {
 	}
 }
 
-func incrementMarksCounter(g *Game) {
-	if getNowPlaying(g) == Cross {
-		g.XMarks++
-	} else {
-		g.OMarks++
-	}
-}
-
-func proceedEndGame(g *Game) {
+func proceedEndGame(g *Game, input InputEvent) {
 	g.CurrentTurn++
 	if sql && !sqlProceed {
 		jsonAsBytes, _ := json.Marshal(g)
@@ -110,7 +105,7 @@ func proceedEndGame(g *Game) {
 		api.UploadNewGame(jsonString)
 		sqlProceed = true
 	}
-	if g.PlayerInput.eventType == Mouse {
+	if input.eventType == Mouse {
 		var newBoard [3][3]Symbol
 		g.GameBoard = newBoard
 		g.CurrentTurn = 0
@@ -119,6 +114,14 @@ func proceedEndGame(g *Game) {
 		g.WinRod.rodType = NORod
 		g.GameState = MainMenu
 		sqlProceed = false
+	}
+}
+
+func incrementMarksCounter(g *Game) {
+	if getNowPlaying(g) == Cross {
+		g.XMarks++
+	} else {
+		g.OMarks++
 	}
 }
 

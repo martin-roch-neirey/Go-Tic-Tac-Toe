@@ -84,7 +84,6 @@ type Game struct {
 	GameBoard   [3][3]Symbol
 	GameState   State
 	GameMode    Mode
-	PlayerInput InputEvent
 	WinRod      WinRod
 	CurrentTurn uint
 	XMarks      uint
