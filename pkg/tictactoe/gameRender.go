@@ -5,17 +5,18 @@ import (
 	"GoTicTacToe/resources"
 	"bytes"
 	"fmt"
+	"image"
+	"image/color"
+	"log"
+	"strings"
+	"time"
+
 	"github.com/fogleman/gg"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/examples/resources/fonts"
 	"github.com/hajimehoshi/ebiten/v2/text"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/opentype"
-	"image"
-	"image/color"
-	"log"
-	"strings"
-	"time"
 )
 
 func (g *Game) Draw(screen *ebiten.Image) {
@@ -31,7 +32,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	case Finished:
 		g.DrawGameBoard(screen)
-		g.DrawWinBar(screen)
+		g.DrawWinRod(screen)
 	}
 
 	msgFPS := strings.Replace(api.GetTranslation("tps_fps", lang), "{tps}",
@@ -72,23 +73,23 @@ func (g *Game) DrawSymbol(x int, y int, sym Symbol, screen *ebiten.Image) {
 	}
 }
 
-func (g *Game) DrawWinBar(screen *ebiten.Image) {
+func (g *Game) DrawWinRod(screen *ebiten.Image) {
 
 	opSymbol := &ebiten.DrawImageOptions{}
-	pos := 1
-	v := 2
 
-	switch v {
-	case 0:
-		opSymbol.GeoM.Translate(0, float64(WINDOW_W/3)*float64(pos))
+	switch g.WinRod.rodType {
+	case HRod:
+		opSymbol.GeoM.Translate(0, float64(WINDOW_W/3)*float64(g.WinRod.location))
 		screen.DrawImage(g.Assets["win_bar_h"], opSymbol)
 
-	case 1:
-		opSymbol.GeoM.Translate(float64(WINDOW_W/3)*float64(pos), 0)
+	case VRod:
+		opSymbol.GeoM.Translate(float64(WINDOW_W/3)*float64(g.WinRod.location), 0)
 		screen.DrawImage(g.Assets["win_bar_v"], opSymbol)
 
-	case 2:
+	case D1Rod:
 		screen.DrawImage(g.Assets["win_bar_d1"], opSymbol)
+
+	case D2Rod:
 		screen.DrawImage(g.Assets["win_bar_d2"], opSymbol)
 	}
 

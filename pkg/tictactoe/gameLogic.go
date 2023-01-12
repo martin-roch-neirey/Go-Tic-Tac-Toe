@@ -3,6 +3,7 @@ package tictactoe
 import (
 	"GoTicTacToe/pkg/api"
 	"encoding/json"
+
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
@@ -76,14 +77,17 @@ func refreshInGame(g *Game) {
 				}
 				g.CurrentTurn++
 
-				if g.GameMode == IA {
-					AIPlaceRandom(g)
-				}
-
 				if g.CurrentTurn > 8 {
 					g.GameState = Finished
 					return
 				}
+
+				if g.GameMode == IA {
+					g.AIPlace()
+				} else if g.GameMode == IARandom {
+					g.AIPlaceRandom()
+				}
+
 			}
 
 		}
@@ -112,6 +116,7 @@ func proceedEndGame(g *Game) {
 		g.CurrentTurn = 0
 		g.XMarks = 0
 		g.OMarks = 0
+		g.WinRod.rodType = NORod
 		g.GameState = MainMenu
 		sqlProceed = false
 	}
@@ -132,8 +137,22 @@ func checkWinner(g *Game, x int, y int, sym Symbol) bool {
 	sum[2] = int(g.GameBoard[0][0]) + int(g.GameBoard[1][1]) + int(g.GameBoard[2][2])
 	sum[3] = int(g.GameBoard[0][2]) + int(g.GameBoard[1][1]) + int(g.GameBoard[2][0])
 
-	for _, v := range sum {
+	for i, v := range sum {
 		if int(v) == (int(sym) * 3) {
+
+			switch i {
+			case 0:
+				g.WinRod.rodType = HRod
+				g.WinRod.location = uint(y)
+			case 1:
+				g.WinRod.rodType = VRod
+				g.WinRod.location = uint(x)
+			case 2:
+				g.WinRod.rodType = D1Rod
+			case 3:
+				g.WinRod.rodType = D2Rod
+			}
+
 			return true
 		}
 	}

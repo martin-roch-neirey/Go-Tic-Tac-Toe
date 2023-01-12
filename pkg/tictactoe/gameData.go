@@ -25,7 +25,6 @@ var sqlProceed = false
 
 type Symbol uint
 
-// Calcule via carré magique ()
 const (
 	None   Symbol = 0
 	Cross  Symbol = 1
@@ -36,6 +35,7 @@ type Mode uint
 
 const (
 	MultiPlayer Mode = iota
+	IARandom
 	IA
 )
 
@@ -63,6 +63,21 @@ type InputEvent struct {
 	mouseY    int
 }
 
+type RodType uint
+
+const (
+	NORod RodType = iota
+	HRod
+	VRod
+	D1Rod
+	D2Rod
+)
+
+type WinRod struct {
+	rodType  RodType
+	location uint
+}
+
 type Game struct {
 	Assets      map[string]*ebiten.Image
 	Fonts       map[string]font.Face
@@ -70,6 +85,7 @@ type Game struct {
 	GameState   State
 	GameMode    Mode
 	PlayerInput InputEvent
+	WinRod      WinRod
 	CurrentTurn uint
 	XMarks      uint
 	OMarks      uint
