@@ -3,6 +3,7 @@ package tictactoe
 import (
 	"GoTicTacToe/pkg/api"
 	"encoding/json"
+	"fmt"
 	"os"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -11,38 +12,51 @@ import (
 
 func (g *Game) Update() error {
 
-	inputAction(g)
+	playerInput := GetInputs()
 
 	switch g.GameState {
 	case MainMenu:
-		refreshMainMenu(g)
+		refreshMainMenu(g, playerInput)
 	case Playing:
-		refreshInGame(g)
+		refreshInGame(g, playerInput)
 	case Finished:
-		proceedEndGame(g)
+		proceedEndGame(g, playerInput)
 	case Pause:
 		//refreshPauseMenu(g)
 	case LastGamesMenu:
 		refreshLastGamesMenu(g)
 	}
 
-	g.PlayerInput.eventType = Void
 	return nil
 }
 
-func inputAction(g *Game) {
+func (g *Game) InitGame() {
+	g.GameState = MainMenu
+	g.GenerateAssets()
+	g.GenerateFonts()
+	go g.processMainMenuAnimation()
+	g.GameMode = IA
+
+	setupWindow(g)
+}
+
+func GetInputs() InputEvent {
+
+	input := InputEvent{Event(None), 0, 0}
 
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-		g.PlayerInput.eventType = Mouse
-		g.PlayerInput.mouseX, g.PlayerInput.mouseY = ebiten.CursorPosition()
+		input.eventType = Mouse
+		input.mouseX, input.mouseY = ebiten.CursorPosition()
 	}
 
 	if inpututil.KeyPressDuration(ebiten.KeyR) == KEY_PRESS_TIME {
-		g.PlayerInput.eventType = Restart
+		input.eventType = Restart
 	}
 	if inpututil.KeyPressDuration(ebiten.KeyEscape) == KEY_PRESS_TIME {
-		g.PlayerInput.eventType = Quit
+		input.eventType = Quit
 	}
+
+	return input
 }
 
 func getNowPlaying(g *Game) Symbol {
@@ -52,6 +66,20 @@ func getNowPlaying(g *Game) Symbol {
 	return Circle
 }
 
+<<<<<<< pkg/tictactoe/gameLogic.go
+func refreshMainMenu(g *Game, input InputEvent) {
+	if input.eventType == Mouse {
+		//g.GameState = Playing
+
+		if input.mouseX > 0 &&
+			input.mouseX < (WINDOW_W/3) &&
+			input.mouseY > WINDOW_W &&
+			input.mouseY < WINDOW_H {
+			fmt.Printf("ok")
+			g.GameState = Playing
+		}
+
+=======
 func refreshMainMenu(g *Game) {
 	if g.PlayerInput.eventType == Mouse {
 		if g.PlayerInput.mouseY >= 230 && g.PlayerInput.mouseY < 270 { // check start button
@@ -75,20 +103,21 @@ func refreshMainMenu(g *Game) {
 func refreshLastGamesMenu(g *Game) {
 	if g.PlayerInput.eventType == Mouse {
 		g.GameState = MainMenu
+>>>>>>> pkg/tictactoe/gameLogic.go
 	}
 }
 
-func refreshInGame(g *Game) {
+func refreshInGame(g *Game, input InputEvent) {
 
-	if g.PlayerInput.eventType == Mouse {
+	if input.eventType == Mouse {
 		// check if on game area
-		if g.PlayerInput.mouseX > 0 &&
-			g.PlayerInput.mouseX < WINDOW_W &&
-			g.PlayerInput.mouseY > 0 &&
-			g.PlayerInput.mouseY < WINDOW_W {
+		if input.mouseX > 0 &&
+			input.mouseX < WINDOW_W &&
+			input.mouseY > 0 &&
+			input.mouseY < WINDOW_W {
 
-			pX := g.PlayerInput.mouseX / (WINDOW_W / 3)
-			pY := g.PlayerInput.mouseY / (WINDOW_W / 3)
+			pX := input.mouseX / (WINDOW_W / 3)
+			pY := input.mouseY / (WINDOW_W / 3)
 
 			// place a symbol
 			if g.GameBoard[pX][pY] == None {
@@ -100,18 +129,41 @@ func refreshInGame(g *Game) {
 				}
 				g.CurrentTurn++
 
-				if g.GameMode == IA {
-					AIPlaceRandom(g)
-				}
-
 				if g.CurrentTurn > 8 {
 					g.GameState = Finished
 					return
 				}
+
+				if g.GameMode == IA {
+					g.AIPlace()
+				} else if g.GameMode == IARandom {
+					g.AIPlaceRandom()
+				}
+
 			}
 
 		}
 
+	}
+}
+
+func proceedEndGame(g *Game, input InputEvent) {
+	g.CurrentTurn++
+	if sql && !sqlProceed {
+		jsonAsBytes, _ := json.Marshal(g)
+		jsonString := string(jsonAsBytes[:])
+		api.UploadNewGame(jsonString)
+		sqlProceed = true
+	}
+	if input.eventType == Mouse {
+		var newBoard [3][3]Symbol
+		g.GameBoard = newBoard
+		g.CurrentTurn = 0
+		g.XMarks = 0
+		g.OMarks = 0
+		g.WinRod.rodType = NORod
+		g.GameState = MainMenu
+		sqlProceed = false
 	}
 }
 
@@ -120,25 +172,6 @@ func incrementMarksCounter(g *Game) {
 		g.XMarks++
 	} else {
 		g.OMarks++
-	}
-}
-
-func proceedEndGame(g *Game) {
-	g.CurrentTurn++
-	if sql && !sqlProceed {
-		jsonAsBytes, _ := json.Marshal(g)
-		jsonString := string(jsonAsBytes[:])
-		api.UploadNewGame(jsonString)
-		sqlProceed = true
-	}
-	if g.PlayerInput.eventType == Mouse {
-		var newBoard [3][3]Symbol
-		g.GameBoard = newBoard
-		g.CurrentTurn = 0
-		g.XMarks = 0
-		g.OMarks = 0
-		g.GameState = MainMenu
-		sqlProceed = false
 	}
 }
 
@@ -157,14 +190,30 @@ func checkWinner(g *Game, x int, y int, sym Symbol) bool {
 	sum[2] = int(g.GameBoard[0][0]) + int(g.GameBoard[1][1]) + int(g.GameBoard[2][2])
 	sum[3] = int(g.GameBoard[0][2]) + int(g.GameBoard[1][1]) + int(g.GameBoard[2][0])
 
-	for _, v := range sum {
+	for i, v := range sum {
 		if int(v) == (int(sym) * 3) {
+
+			switch i {
+			case 0:
+				g.WinRod.rodType = HRod
+				g.WinRod.location = uint(y)
+			case 1:
+				g.WinRod.rodType = VRod
+				g.WinRod.location = uint(x)
+			case 2:
+				g.WinRod.rodType = D1Rod
+			case 3:
+				g.WinRod.rodType = D2Rod
+			}
+
 			return true
 		}
 	}
 
 	return false
 }
+<<<<<<< pkg/tictactoe/gameLogic.go
+=======
 
 func (g *Game) InitGame() {
 	g.GameState = MainMenu
@@ -175,3 +224,4 @@ func (g *Game) InitGame() {
 
 	setupWindow(g)
 }
+>>>>>>> pkg/tictactoe/gameLogic.go
