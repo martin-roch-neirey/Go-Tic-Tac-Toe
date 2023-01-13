@@ -25,8 +25,9 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		text.Draw(screen, "TIC TAC TOE", g.Fonts["title"], WINDOW_W/4, WINDOW_H/3, color.White)
 		DrawCenteredText(screen, api.GetTranslation("click_to_play", lang), animatedFont, WINDOW_H/2.5, color.White)
 		g.DrawSymbol(0, 0, Cross, screen)
-		g.DrawSymbol(2, 2, Circle, screen)
-		DrawCenteredText(screen, "TEST", g.Fonts["button"], WINDOW_H-WINDOW_H/3, color.White)
+		g.DrawSymbol(2, 0, Circle, screen)
+		g.DrawGameModeSelection(screen)
+		DrawCenteredText(screen, api.GetTranslation("recent_games_button", lang), g.Fonts["button"], WINDOW_H*0.8, color.White)
 	case Playing:
 		g.DrawGameBoard(screen)
 		msgMarks := strings.Replace(api.GetTranslation("marks", lang), "{xMarks}",
@@ -47,7 +48,9 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	msgFPS = strings.Replace(msgFPS, "{fps}",
 		fmt.Sprintf("%0.2f", ebiten.CurrentFPS()), 1)
 	text.Draw(screen, msgFPS, g.Fonts["normal"], 0, WINDOW_H-LINE_THICKNESS, color.White)
+	text.Draw(screen, "Quitter le jeu", g.Fonts["normal"], WINDOW_W-100, WINDOW_H-LINE_THICKNESS, color.White)
 
+	//text.Draw(screen, "I", g.Fonts["button"], 300, 370, color.White)
 }
 
 func (g *Game) DrawGameBoard(screen *ebiten.Image) {
@@ -345,6 +348,38 @@ func DrawCenteredText(screen *ebiten.Image, s string, font font.Face, height int
 	bounds := text.BoundString(font, s)
 	x, y := WINDOW_W/2-bounds.Min.X-bounds.Dx()/2, height-bounds.Min.Y-bounds.Dy()/2
 	text.Draw(screen, s, font, x, y, color)
+}
+
+func DrawLeftText(screen *ebiten.Image, s string, font font.Face, height int, color color.Color) {
+	bounds := text.BoundString(font, s)
+	x, y := 20, height-bounds.Min.Y-bounds.Dy()/2 // 20 of left padding
+	text.Draw(screen, s, font, x, y, color)
+}
+
+func DrawRightText(screen *ebiten.Image, s string, font font.Face, height int, color color.Color) {
+	bounds := text.BoundString(font, s)
+	x, y := WINDOW_W-bounds.Min.X-bounds.Dx()-20, height-bounds.Min.Y-bounds.Dy()/2 // 20 of right padding
+	text.Draw(screen, s, font, x, y, color)
+}
+
+func (g *Game) DrawGameModeSelection(screen *ebiten.Image) {
+	selectedColor := color.RGBA{45, 255, 45, 200}
+	heightOffset := int(WINDOW_H * 0.6)
+
+	switch g.GameMode {
+	case MultiPlayer:
+		DrawLeftText(screen, "Multiplayer", g.Fonts["button"], heightOffset, selectedColor)
+		DrawCenteredText(screen, "IA", g.Fonts["button"], heightOffset, color.White)
+		DrawRightText(screen, "IARandom", g.Fonts["button"], heightOffset, color.White)
+	case IA:
+		DrawLeftText(screen, "Multiplayer", g.Fonts["button"], heightOffset, color.White)
+		DrawCenteredText(screen, "IA", g.Fonts["button"], heightOffset, selectedColor)
+		DrawRightText(screen, "IARandom", g.Fonts["button"], heightOffset, color.White)
+	case IARandom:
+		DrawLeftText(screen, "Multiplayer", g.Fonts["button"], heightOffset, color.White)
+		DrawCenteredText(screen, "IA", g.Fonts["button"], heightOffset, color.White)
+		DrawRightText(screen, "IARandom", g.Fonts["button"], heightOffset, selectedColor)
+	}
 }
 
 func setupWindow(g *Game) {

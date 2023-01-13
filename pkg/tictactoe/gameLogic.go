@@ -53,10 +53,18 @@ func getNowPlaying(g *Game) Symbol {
 
 func refreshMainMenu(g *Game) {
 	if g.PlayerInput.eventType == Mouse {
-		if g.PlayerInput.mouseY < 200 {
-			g.GameState = LastGamesMenu
-		} else {
+		if g.PlayerInput.mouseY >= 230 && g.PlayerInput.mouseY < 270 { // check start button
 			g.GameState = Playing
+		} else if g.PlayerInput.mouseY >= 470 && g.PlayerInput.mouseY < 510 { // check game history button
+			g.GameState = LastGamesMenu
+		} else if g.PlayerInput.mouseY >= 350 && g.PlayerInput.mouseY < 390 { // check gamemode section
+			if g.PlayerInput.mouseX < 190 { // check multiplayer button
+				g.GameMode = MultiPlayer
+			} else if g.PlayerInput.mouseX > 300 { // check IARandom button
+				g.GameMode = IARandom
+			} else { // if not multiplayer and not IARandom, then it is IA
+				g.GameMode = IA
+			}
 		}
 	}
 }
@@ -160,7 +168,7 @@ func (g *Game) InitGame() {
 	g.GenerateAssets()
 	g.GenerateFonts()
 	go g.processMainMenuAnimation()
-	g.GameMode = IA
+	g.GameMode = MultiPlayer
 
 	setupWindow(g)
 }

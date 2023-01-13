@@ -8,7 +8,8 @@
     "button_resetting": "Ceci est un test !",
     "button_exiting": "Bonjour !",
     "tps_fps": "TPS: {tps} | FPS: {fps}",
-    "marks": "X symboles: {xMarks} | O symboles: {oMarks}"
+    "marks": "X symboles: {xMarks} | O symboles: {oMarks}",
+    "recent_games_button": "Historique partagé des parties"
   },
   "en-US": {
     "fallback": "fr-FR",
