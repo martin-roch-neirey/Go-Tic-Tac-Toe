@@ -4,6 +4,7 @@ import (
 	"GoTicTacToe/pkg/api"
 	"encoding/json"
 	"fmt"
+	"os"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -22,6 +23,8 @@ func (g *Game) Update() error {
 		proceedEndGame(g, playerInput)
 	case Pause:
 		//refreshPauseMenu(g)
+	case LastGamesMenu:
+		refreshLastGamesMenu(g)
 	}
 
 	return nil
@@ -63,6 +66,7 @@ func getNowPlaying(g *Game) Symbol {
 	return Circle
 }
 
+<<<<<<< pkg/tictactoe/gameLogic.go
 func refreshMainMenu(g *Game, input InputEvent) {
 	if input.eventType == Mouse {
 		//g.GameState = Playing
@@ -75,6 +79,31 @@ func refreshMainMenu(g *Game, input InputEvent) {
 			g.GameState = Playing
 		}
 
+=======
+func refreshMainMenu(g *Game) {
+	if g.PlayerInput.eventType == Mouse {
+		if g.PlayerInput.mouseY >= 230 && g.PlayerInput.mouseY < 270 { // check start button
+			g.GameState = Playing
+		} else if g.PlayerInput.mouseY >= 470 && g.PlayerInput.mouseY < 510 { // check game history button
+			g.GameState = LastGamesMenu
+		} else if g.PlayerInput.mouseX >= 370 && g.PlayerInput.mouseY > 570 { // check game exiting button
+			os.Exit(0)
+		} else if g.PlayerInput.mouseY >= 350 && g.PlayerInput.mouseY < 390 { // check gamemode section
+			if g.PlayerInput.mouseX < 190 { // check multiplayer button
+				g.GameMode = MultiPlayer
+			} else if g.PlayerInput.mouseX > 300 { // check IARandom button
+				g.GameMode = IARandom
+			} else { // if not multiplayer and not IARandom, then it is IA
+				g.GameMode = IA
+			}
+		}
+	}
+}
+
+func refreshLastGamesMenu(g *Game) {
+	if g.PlayerInput.eventType == Mouse {
+		g.GameState = MainMenu
+>>>>>>> pkg/tictactoe/gameLogic.go
 	}
 }
 
@@ -114,6 +143,7 @@ func refreshInGame(g *Game, input InputEvent) {
 			}
 
 		}
+
 	}
 }
 
@@ -182,3 +212,16 @@ func checkWinner(g *Game, x int, y int, sym Symbol) bool {
 
 	return false
 }
+<<<<<<< pkg/tictactoe/gameLogic.go
+=======
+
+func (g *Game) InitGame() {
+	g.GameState = MainMenu
+	g.GenerateAssets()
+	g.GenerateFonts()
+	go g.processMainMenuAnimation()
+	g.GameMode = MultiPlayer
+
+	setupWindow(g)
+}
+>>>>>>> pkg/tictactoe/gameLogic.go
