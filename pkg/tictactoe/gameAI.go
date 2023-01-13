@@ -1,53 +1,73 @@
+// Copyright (c) 2022 Haute école d'ingerie et d'architecture de Fribourg
+// SPDX-License-Identifier: Apache-2.0
+// Author:  William Margueron & Martin Roch-Neirey
+
+// Package tictactoe implements game fonctions, data and variables
 package tictactoe
 
+import (
+	"math/rand"
+)
+
+// A Case is a 2D value of map coordinate
 type Case struct {
 	X, Y int
 }
 
-func (g *Game) AIGetEmptyCases() map[Case]bool {
-	m := make(map[Case]bool)
+// AI move type
+const (
+	MAX_MOVE  = 10
+	MIN_MOVE  = 10
+	NULL_MOVE = 0
+)
 
-	for x, array := range g.GameBoard {
-		for y, _ := range array {
+// AIGetEmptyCases returns a array with all empty Cases of gameBoard
+func (g *Game) AIGetEmptyCases() []Case {
+	array := make([]Case, 0, 9)
+
+	for x, boardY := range g.GameBoard {
+		for y, _ := range boardY {
 			if g.GameBoard[x][y] == None {
-				m[Case{x, y}] = false
+				array = append(array, Case{x, y})
 			}
 		}
 	}
-	return m
+
+	return array
 }
 
+// AIPlaceRandom places a Circle randomly (AI move) on gameboard and then checks the victory condition.
 func (g *Game) AIPlaceRandom() {
 
-	m := g.AIGetEmptyCases()
+	emptyCase := g.AIGetEmptyCases()
+	randomIndex := rand.Intn(len(emptyCase))
 
-	for k := range m {
-		g.GameBoard[k.X][k.Y] = getNowPlaying(g)
-		incrementMarksCounter(g)
-		if checkWinner(g, k.X, k.Y, getNowPlaying(g)) {
-			g.GameState = Finished
-			return
-		}
-		g.CurrentTurn++
+	g.GameBoard[emptyCase[randomIndex].X][emptyCase[randomIndex].Y] = getNowPlaying(g)
+	incrementMarksCounter(g)
+	if checkWinner(g, emptyCase[randomIndex].X, emptyCase[randomIndex].Y, getNowPlaying(g)) {
+		g.GameState = Finished
 		return
 	}
+
+	g.CurrentTurn++
 }
 
+// AIPlace places a Circle with a minimax Algo on gameboard and then checks the victory condition.
 func (g *Game) AIPlace() {
 
 	bestScore := -1000
 	bestMove := Case{-1, -1}
-	m := g.AIGetEmptyCases()
+	emptyCase := g.AIGetEmptyCases()
 
-	for k := range m {
+	for _, v := range emptyCase {
 
-		g.GameBoard[k.X][k.Y] = getNowPlaying(g)
+		g.GameBoard[v.X][v.Y] = Circle
 		score := minimax(g, 0, false)
-		g.GameBoard[k.X][k.Y] = None
+		g.GameBoard[v.X][v.Y] = None
 
 		if score > bestScore {
 			bestScore = score
-			bestMove = Case{k.X, k.Y}
+			bestMove = Case{v.X, v.Y}
 		}
 	}
 
@@ -60,16 +80,21 @@ func (g *Game) AIPlace() {
 	g.CurrentTurn++
 }
 
+// minimax function evaluate actions and return best choice for AI
 func minimax(g *Game, depth int, isMax bool) int {
-	val := evaluate(g)
-	best := 0
 
-	if val == 10 || val == -10 {
-		return val
+	var best int
+	val := evaluate(g)
+	if val == MAX_MOVE {
+		return 10 - depth
 	}
 
-	m := g.AIGetEmptyCases()
-	if len(m) == 0 {
+	if val == MIN_MOVE {
+		return -10 + depth
+	}
+
+	emptyCases := g.AIGetEmptyCases()
+	if len(emptyCases) == 0 {
 		return 0
 	}
 
@@ -98,24 +123,25 @@ func minimax(g *Game, depth int, isMax bool) int {
 	return best
 }
 
+// evaluate current state of game and give next best AI move
 func evaluate(g *Game) int {
 
 	for x, array := range g.GameBoard {
 
 		if g.GameBoard[x][0] == g.GameBoard[x][1] && g.GameBoard[x][1] == g.GameBoard[x][2] {
 			if g.GameBoard[x][0] == Circle {
-				return 10
+				return MAX_MOVE
 			} else if g.GameBoard[x][0] == Cross {
-				return -10
+				return MIN_MOVE
 			}
 		}
 
 		for y, _ := range array {
 			if g.GameBoard[0][y] == g.GameBoard[1][y] && g.GameBoard[1][y] == g.GameBoard[2][y] {
 				if g.GameBoard[0][y] == Circle {
-					return 10
+					return MAX_MOVE
 				} else if g.GameBoard[0][y] == Cross {
-					return -10
+					return MIN_MOVE
 				}
 			}
 		}
@@ -123,23 +149,24 @@ func evaluate(g *Game) int {
 
 	if g.GameBoard[0][0] == g.GameBoard[1][1] && g.GameBoard[1][1] == g.GameBoard[2][2] {
 		if g.GameBoard[0][0] == Circle {
-			return 10
+			return MAX_MOVE
 		} else if g.GameBoard[0][0] == Cross {
-			return -10
+			return MIN_MOVE
 		}
 	}
 
 	if g.GameBoard[0][2] == g.GameBoard[1][1] && g.GameBoard[1][1] == g.GameBoard[2][2] {
 		if g.GameBoard[0][2] == Circle {
-			return 10
+			return MAX_MOVE
 		} else if g.GameBoard[0][2] == Cross {
-			return -10
+			return MIN_MOVE
 		}
 	}
 
-	return 0
+	return NULL_MOVE
 }
 
+// max return the largest number
 func max(a, b int) int {
 	if a > b {
 		return a
@@ -147,6 +174,7 @@ func max(a, b int) int {
 	return b
 }
 
+// min return the smallest number
 func min(a, b int) int {
 	if a < b {
 		return a

@@ -3,6 +3,7 @@ package tictactoe
 import (
 	"GoTicTacToe/pkg/api"
 	"encoding/json"
+	"fmt"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -24,6 +25,16 @@ func (g *Game) Update() error {
 	}
 
 	return nil
+}
+
+func (g *Game) InitGame() {
+	g.GameState = MainMenu
+	g.GenerateAssets()
+	g.GenerateFonts()
+	go g.processMainMenuAnimation()
+	g.GameMode = IA
+
+	setupWindow(g)
 }
 
 func GetInputs() InputEvent {
@@ -54,7 +65,16 @@ func getNowPlaying(g *Game) Symbol {
 
 func refreshMainMenu(g *Game, input InputEvent) {
 	if input.eventType == Mouse {
-		g.GameState = Playing
+		//g.GameState = Playing
+
+		if input.mouseX > 0 &&
+			input.mouseX < (WINDOW_W/3) &&
+			input.mouseY > WINDOW_W &&
+			input.mouseY < WINDOW_H {
+			fmt.Printf("ok")
+			g.GameState = Playing
+		}
+
 	}
 }
 
@@ -161,14 +181,4 @@ func checkWinner(g *Game, x int, y int, sym Symbol) bool {
 	}
 
 	return false
-}
-
-func (g *Game) InitGame() {
-	g.GameState = MainMenu
-	g.GenerateAssets()
-	g.GenerateFonts()
-	go g.processMainMenuAnimation()
-	g.GameMode = IA
-
-	setupWindow(g)
 }
