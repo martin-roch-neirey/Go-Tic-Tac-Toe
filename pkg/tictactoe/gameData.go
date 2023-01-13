@@ -46,6 +46,7 @@ const (
 	Playing
 	Finished
 	Pause
+	LastGamesMenu
 )
 
 type Event uint

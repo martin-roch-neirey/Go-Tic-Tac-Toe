@@ -3,6 +3,7 @@ package tictactoe
 import (
 	"GoTicTacToe/pkg/api"
 	"encoding/json"
+
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
@@ -20,6 +21,8 @@ func (g *Game) Update() error {
 		proceedEndGame(g)
 	case Pause:
 		//refreshPauseMenu(g)
+	case LastGamesMenu:
+		refreshLastGamesMenu(g)
 	}
 
 	g.PlayerInput.eventType = Void
@@ -50,7 +53,17 @@ func getNowPlaying(g *Game) Symbol {
 
 func refreshMainMenu(g *Game) {
 	if g.PlayerInput.eventType == Mouse {
-		g.GameState = Playing
+		if g.PlayerInput.mouseY < 200 {
+			g.GameState = LastGamesMenu
+		} else {
+			g.GameState = Playing
+		}
+	}
+}
+
+func refreshLastGamesMenu(g *Game) {
+	if g.PlayerInput.eventType == Mouse {
+		g.GameState = MainMenu
 	}
 }
 
@@ -87,6 +100,7 @@ func refreshInGame(g *Game) {
 			}
 
 		}
+
 	}
 }
 

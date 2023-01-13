@@ -22,16 +22,24 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	switch g.GameState {
 	case MainMenu:
-		text.Draw(screen, "TIC TAC TOE", g.Fonts["title"], WINDOW_W/4, WINDOW_H/2.5, color.White)
-		DrawCenteredText(screen, api.GetTranslation("click_to_play", lang), animatedFont, WINDOW_H/2, color.White)
+		text.Draw(screen, "TIC TAC TOE", g.Fonts["title"], WINDOW_W/4, WINDOW_H/3, color.White)
+		DrawCenteredText(screen, api.GetTranslation("click_to_play", lang), animatedFont, WINDOW_H/2.5, color.White)
 		g.DrawSymbol(0, 0, Cross, screen)
 		g.DrawSymbol(2, 2, Circle, screen)
+		DrawCenteredText(screen, "TEST", g.Fonts["button"], WINDOW_H-WINDOW_H/3, color.White)
 	case Playing:
 		g.DrawGameBoard(screen)
-
+		msgMarks := strings.Replace(api.GetTranslation("marks", lang), "{xMarks}",
+			fmt.Sprintf("%v", g.XMarks), 1)
+		msgMarks = strings.Replace(msgMarks, "{oMarks}",
+			fmt.Sprintf("%v", g.OMarks), 1)
+		DrawCenteredText(screen, msgMarks, g.Fonts["normal"], WINDOW_H-10*LINE_THICKNESS, color.White)
 	case Finished:
 		g.DrawGameBoard(screen)
 		g.DrawWinBar(screen)
+	case LastGamesMenu:
+		DrawCenteredText(screen, "Dernières parties jouées", g.Fonts["button"], WINDOW_H/10, color.White)
+
 	}
 
 	msgFPS := strings.Replace(api.GetTranslation("tps_fps", lang), "{tps}",
@@ -39,13 +47,6 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	msgFPS = strings.Replace(msgFPS, "{fps}",
 		fmt.Sprintf("%0.2f", ebiten.CurrentFPS()), 1)
 	text.Draw(screen, msgFPS, g.Fonts["normal"], 0, WINDOW_H-LINE_THICKNESS, color.White)
-
-	msgMarks := strings.Replace(api.GetTranslation("marks", lang), "{xMarks}",
-		fmt.Sprintf("%v", g.XMarks), 1)
-	msgMarks = strings.Replace(msgMarks, "{oMarks}",
-		fmt.Sprintf("%v", g.OMarks), 1)
-	DrawCenteredText(screen, msgMarks, g.Fonts["normal"], WINDOW_H-10*LINE_THICKNESS, color.White)
-	// text.Draw(screen, msgMarks, g.Fonts["normal"], 0, WINDOW_H-LINE_THICKNESS, color.White)
 
 }
 
@@ -183,6 +184,24 @@ func (g *Game) GenerateFonts() {
 
 	g.Fonts["title"], err = opentype.NewFace(tt, &opentype.FaceOptions{
 		Size:    40,
+		DPI:     72,
+		Hinting: font.HintingFull,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	g.Fonts["subtitle"], err = opentype.NewFace(tt, &opentype.FaceOptions{
+		Size:    32,
+		DPI:     72,
+		Hinting: font.HintingFull,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	g.Fonts["button"], err = opentype.NewFace(tt, &opentype.FaceOptions{
+		Size:    28,
 		DPI:     72,
 		Hinting: font.HintingFull,
 	})
