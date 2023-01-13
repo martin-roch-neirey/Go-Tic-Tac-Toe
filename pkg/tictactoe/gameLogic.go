@@ -20,10 +20,10 @@ func (g *Game) Update() error {
 		refreshInGame(g, playerInput)
 	case Finished:
 		proceedEndGame(g, playerInput)
-	case Pause:
-		//refreshPauseMenu(g)
 	case LastGamesMenu:
 		refreshLastGamesMenu(g, playerInput)
+	case OldBoardView:
+		refreshOldBoardViewMenu(g, playerInput)
 	}
 
 	return nil
@@ -48,10 +48,7 @@ func GetInputs() InputEvent {
 		input.mouseX, input.mouseY = ebiten.CursorPosition()
 	}
 
-	if inpututil.KeyPressDuration(ebiten.KeyR) == KEY_PRESS_TIME {
-		input.eventType = Restart
-	}
-	if inpututil.KeyPressDuration(ebiten.KeyEscape) == KEY_PRESS_TIME {
+	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
 		input.eventType = Quit
 	}
 
@@ -87,8 +84,31 @@ func refreshMainMenu(g *Game, input InputEvent) {
 
 func refreshLastGamesMenu(g *Game, input InputEvent) {
 	if input.eventType == Mouse {
+		if input.mouseY > 500 && input.mouseY < 550 {
+			g.GameState = MainMenu
+		}
+		if input.mouseX > 350 {
+			if input.mouseY > 160 && input.mouseY < 200 {
+				g.LastGameEntriesViewId = 0
+				g.GameState = OldBoardView
+			} else if input.mouseY > 210 && input.mouseY < 250 {
+				g.LastGameEntriesViewId = 1
+				g.GameState = OldBoardView
+			} else if input.mouseY > 260 && input.mouseY < 300 {
+				g.LastGameEntriesViewId = 2
+				g.GameState = OldBoardView
+			} else if input.mouseY > 310 && input.mouseY < 350 {
+				g.LastGameEntriesViewId = 3
+				g.GameState = OldBoardView
+			} else if input.mouseY > 360 && input.mouseY < 400 {
+				g.LastGameEntriesViewId = 4
+				g.GameState = OldBoardView
+			}
+		}
+	} else if input.eventType == Quit {
 		g.GameState = MainMenu
 	}
+
 }
 
 func refreshInGame(g *Game, input InputEvent) {
@@ -131,6 +151,12 @@ func refreshInGame(g *Game, input InputEvent) {
 	}
 }
 
+func refreshOldBoardViewMenu(g *Game, input InputEvent) {
+	if input.eventType == Mouse {
+		g.GameState = LastGamesMenu
+	}
+}
+
 func proceedEndGame(g *Game, input InputEvent) {
 	g.CurrentTurn++
 	if sql && !sqlProceed {
@@ -145,6 +171,7 @@ func proceedEndGame(g *Game, input InputEvent) {
 		g.CurrentTurn = 0
 		g.XMarks = 0
 		g.OMarks = 0
+		g.Winner = "/"
 		g.WinRod.rodType = NORod
 		g.GameState = MainMenu
 		sqlProceed = false
@@ -194,6 +221,6 @@ func checkWinner(g *Game, x int, y int, sym Symbol) bool {
 			return true
 		}
 	}
-
+	g.Winner = "/"
 	return false
 }

@@ -11,7 +11,10 @@
     "marks": "X symboles: {xMarks} | O symboles: {oMarks}",
     "recent_games_button": "Historique partagé des parties",
     "last_played_games": "Dernières parties jouées",
-    "number_of_games": "Nombre total de parties : {value}"
+    "number_of_games": "Nombre total de parties : {value}",
+    "click_to_dismiss": "Clique pour quitter",
+    "details_of_game": "Historique des placements",
+    "click_anywhere_to_dismiss": "Clique n'importe où pour quitter"
   },
   "en-US": {
     "fallback": "fr-FR",

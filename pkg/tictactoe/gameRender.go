@@ -31,6 +31,8 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		g.DrawSymbol(2, 0, Circle, screen)
 		g.DrawGameModeSelection(screen)
 		DrawCenteredText(screen, api.GetTranslation("recent_games_button", lang), g.Fonts["button"], WINDOW_H*0.8, color.White)
+		DrawRightText(screen, api.GetTranslation("button_exiting", lang), g.Fonts["normal"], WINDOW_H-LINE_THICKNESS, color.White)
+
 	case Playing:
 		g.DrawGameBoard(screen)
 		msgMarks := strings.Replace(api.GetTranslation("marks", lang), "{xMarks}",
@@ -45,23 +47,25 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		DrawCenteredText(screen, api.GetTranslation("last_played_games", lang), g.Fonts["button"], WINDOW_H/10, color.White)
 		msgNumberOfGames := strings.Replace(api.GetTranslation("number_of_games", lang), "{value}",
 			strconv.Itoa(api.GetGamesCount()), 1)
-		DrawCenteredText(screen, msgNumberOfGames, g.Fonts["normal"], WINDOW_H*0.85, color.White)
+		DrawCenteredText(screen, msgNumberOfGames, g.Fonts["normal"], WINDOW_H*0.75, color.White)
+		DrawCenteredText(screen, api.GetTranslation("click_to_dismiss", lang), g.Fonts["button"], WINDOW_H*0.85, color.White)
 		DrawLeftText(screen, "Mode", g.Fonts["button"], WINDOW_H*0.2, color.White)
 		DrawCenteredText(screen, "Victoire", g.Fonts["button"], WINDOW_H*0.2, color.White)
 		DrawRightText(screen, "Plateau", g.Fonts["button"], WINDOW_H*0.2, color.White)
 
 		var lastGames []string
 		lastGames = api.GetLastGames()
+		var lastGamesEntries []OldGameEntry
 		offset := 0
 		for i := 0; i < 5; i++ {
 			offset = 50 * i
 			gameJson := lastGames[i]
-			entry := LastGameEntry{}
+			entry := OldGameEntry{}
 			var gameMode string
 			var winner string
 			json.Unmarshal([]byte(gameJson), &entry)
 			//log.Printf("gamemode: %v", entry.Mode)
-			//log.Printf("board: %v", entry.Board)
+			// log.Printf("board: %v", entry.Board)
 			if entry.Mode == 0 {
 				gameMode = "Multiplayer"
 			} else if entry.Mode == 1 {
@@ -72,12 +76,35 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 			winner = entry.Winner
 
+			lastGamesEntries = append(lastGamesEntries, entry)
+
 			DrawLeftText(screen, gameMode, g.Fonts["normal"], WINDOW_H*0.3+offset, color.White)
 			DrawCenteredText(screen, winner, g.Fonts["normal"], WINDOW_H*0.3+offset, color.White)
-			DrawRightText(screen, "Voir", g.Fonts["normal"], WINDOW_H*0.3+offset, color.White)
+			DrawRightText(screen, "Voir (clique)", g.Fonts["normal"], WINDOW_H*0.3+offset, color.White)
 
+			//text.Draw(screen, "I", g.Fonts["normal"], 350, 500, color.White)
 		}
+		g.LastGameEntries = lastGamesEntries
+	case OldBoardView:
+		g.DrawGameBoard(screen)
+		DrawCenteredText(screen, api.GetTranslation("details_of_game", lang), g.Fonts["normal"], WINDOW_H-15*LINE_THICKNESS, color.White)
+		DrawCenteredText(screen, api.GetTranslation("click_anywhere_to_dismiss", lang), g.Fonts["normal"], WINDOW_H*0.93, color.White)
+		var oldGameBoard [][]int
+		var oldGameEntry OldGameEntry
+		oldGameEntry = g.LastGameEntries[g.LastGameEntriesViewId]
+		oldGameBoard = oldGameEntry.Board
 
+		for i := 0; i < 3; i++ {
+			row := oldGameBoard[i]
+			for j := 0; j < 3; j++ {
+				if row[j] == 1 {
+					g.DrawSymbol(i, j, Cross, screen)
+				} else if row[j] == 4 {
+					g.DrawSymbol(i, j, Circle, screen)
+				}
+
+			}
+		}
 	}
 
 	msgFPS := strings.Replace(api.GetTranslation("tps_fps", lang), "{tps}",
@@ -85,7 +112,6 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	msgFPS = strings.Replace(msgFPS, "{fps}",
 		fmt.Sprintf("%0.2f", ebiten.CurrentFPS()), 1)
 	text.Draw(screen, msgFPS, g.Fonts["normal"], 0, WINDOW_H-LINE_THICKNESS, color.White)
-	DrawRightText(screen, api.GetTranslation("button_exiting", lang), g.Fonts["normal"], WINDOW_H-LINE_THICKNESS, color.White)
 }
 
 func (g *Game) DrawGameBoard(screen *ebiten.Image) {

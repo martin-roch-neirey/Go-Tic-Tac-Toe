@@ -56,8 +56,8 @@ const (
 	MainMenu State = iota
 	Playing
 	Finished
-	Pause
 	LastGamesMenu
+	OldBoardView
 )
 
 type Event uint
@@ -65,7 +65,6 @@ type Event uint
 const (
 	Void Event = iota
 	Quit
-	Restart
 	Mouse
 )
 
@@ -91,19 +90,21 @@ type WinRod struct {
 }
 
 type Game struct {
-	Assets      map[string]*ebiten.Image
-	Fonts       map[string]font.Face
-	GameBoard   [3][3]Symbol
-	GameState   State
-	GameMode    Mode
-	WinRod      WinRod
-	CurrentTurn uint
-	XMarks      uint
-	OMarks      uint
-	Winner      string
+	Assets                map[string]*ebiten.Image
+	Fonts                 map[string]font.Face
+	GameBoard             [3][3]Symbol
+	GameState             State
+	GameMode              Mode
+	WinRod                WinRod
+	CurrentTurn           uint
+	XMarks                uint
+	OMarks                uint
+	Winner                string
+	LastGameEntries       []OldGameEntry
+	LastGameEntriesViewId int
 }
 
-type LastGameEntry struct {
+type OldGameEntry struct {
 	Mode   int     `json:"GameMode"`
 	Winner string  `json:"Winner"`
 	Board  [][]int `json:"GameBoard"`
