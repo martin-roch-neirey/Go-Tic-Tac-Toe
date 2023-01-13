@@ -6,10 +6,12 @@
     "game_name": "Tic Tac Toe",
     "game_message_win": "{winner}\na\ngagné !",
     "button_resetting": "Ceci est un test !",
-    "button_exiting": "Bonjour !",
+    "button_exiting": "Quitter le jeu",
     "tps_fps": "TPS: {tps} | FPS: {fps}",
     "marks": "X symboles: {xMarks} | O symboles: {oMarks}",
-    "recent_games_button": "Historique partagé des parties"
+    "recent_games_button": "Historique partagé des parties",
+    "last_played_games": "Dernières parties jouées",
+    "number_of_games": "Nombre total de parties : {value}"
   },
   "en-US": {
     "fallback": "fr-FR",

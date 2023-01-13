@@ -4,10 +4,12 @@ import (
 	"GoTicTacToe/pkg/api"
 	"GoTicTacToe/resources"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"image"
 	"image/color"
 	"log"
+	"strconv"
 	"strings"
 	"time"
 
@@ -40,7 +42,41 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		g.DrawGameBoard(screen)
 		g.DrawWinRod(screen)
 	case LastGamesMenu:
-		DrawCenteredText(screen, "Dernières parties jouées", g.Fonts["button"], WINDOW_H/10, color.White)
+		DrawCenteredText(screen, api.GetTranslation("last_played_games", lang), g.Fonts["button"], WINDOW_H/10, color.White)
+		msgNumberOfGames := strings.Replace(api.GetTranslation("number_of_games", lang), "{value}",
+			strconv.Itoa(api.GetGamesCount()), 1)
+		DrawCenteredText(screen, msgNumberOfGames, g.Fonts["normal"], WINDOW_H*0.85, color.White)
+		DrawLeftText(screen, "Mode", g.Fonts["button"], WINDOW_H*0.2, color.White)
+		DrawCenteredText(screen, "Victoire", g.Fonts["button"], WINDOW_H*0.2, color.White)
+		DrawRightText(screen, "Plateau", g.Fonts["button"], WINDOW_H*0.2, color.White)
+
+		var lastGames []string
+		lastGames = api.GetLastGames()
+		offset := 0
+		for i := 0; i < 5; i++ {
+			offset = 50 * i
+			gameJson := lastGames[i]
+			entry := LastGameEntry{}
+			var gameMode string
+			var winner string
+			json.Unmarshal([]byte(gameJson), &entry)
+			//log.Printf("gamemode: %v", entry.Mode)
+			//log.Printf("board: %v", entry.Board)
+			if entry.Mode == 0 {
+				gameMode = "Multiplayer"
+			} else if entry.Mode == 1 {
+				gameMode = "IARandom"
+			} else {
+				gameMode = "IA"
+			}
+
+			winner = entry.Winner
+
+			DrawLeftText(screen, gameMode, g.Fonts["normal"], WINDOW_H*0.3+offset, color.White)
+			DrawCenteredText(screen, winner, g.Fonts["normal"], WINDOW_H*0.3+offset, color.White)
+			DrawRightText(screen, "Voir", g.Fonts["normal"], WINDOW_H*0.3+offset, color.White)
+
+		}
 
 	}
 
@@ -49,7 +85,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	msgFPS = strings.Replace(msgFPS, "{fps}",
 		fmt.Sprintf("%0.2f", ebiten.CurrentFPS()), 1)
 	text.Draw(screen, msgFPS, g.Fonts["normal"], 0, WINDOW_H-LINE_THICKNESS, color.White)
-	text.Draw(screen, "Quitter le jeu", g.Fonts["normal"], WINDOW_W-100, WINDOW_H-LINE_THICKNESS, color.White)
+	DrawRightText(screen, api.GetTranslation("button_exiting", lang), g.Fonts["normal"], WINDOW_H-LINE_THICKNESS, color.White)
 }
 
 func (g *Game) DrawGameBoard(screen *ebiten.Image) {

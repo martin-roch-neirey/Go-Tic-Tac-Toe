@@ -20,7 +20,7 @@ var animatedFont font.Face
 var animatedFontList []font.Face
 var listPointer = 0
 
-var sql = false // TODO delete later, set to false if DB is not online
+var sql = true // TODO delete later, set to false if DB is not online
 var sqlProceed = false
 
 type Symbol uint
@@ -30,6 +30,17 @@ const (
 	Cross  Symbol = 1
 	Circle Symbol = 4
 )
+
+func (s Symbol) toString() rune {
+	switch s {
+	case Cross:
+		return 'X'
+	case Circle:
+		return 'O'
+	default:
+		return '/'
+	}
+}
 
 type Mode uint
 
@@ -90,4 +101,10 @@ type Game struct {
 	XMarks      uint
 	OMarks      uint
 	Winner      string
+}
+
+type LastGameEntry struct {
+	Mode   int     `json:"GameMode"`
+	Winner string  `json:"Winner"`
+	Board  [][]int `json:"GameBoard"`
 }

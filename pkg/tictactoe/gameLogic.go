@@ -71,7 +71,7 @@ func refreshMainMenu(g *Game, input InputEvent) {
 			g.GameState = Playing
 		} else if input.mouseY >= 470 && input.mouseY < 510 { // check game history button
 			g.GameState = LastGamesMenu
-		} else if input.mouseX >= 370 && input.mouseY > 570 { // check game exiting button
+		} else if input.mouseX >= 350 && input.mouseY > 570 { // check game exiting button
 			os.Exit(0)
 		} else if input.mouseY >= 350 && input.mouseY < 390 { // check gamemode section
 			if input.mouseX < 190 { // check multiplayer button
@@ -190,6 +190,7 @@ func checkWinner(g *Game, x int, y int, sym Symbol) bool {
 				g.WinRod.rodType = D2Rod
 			}
 
+			g.Winner = string(sym.toString())
 			return true
 		}
 	}
