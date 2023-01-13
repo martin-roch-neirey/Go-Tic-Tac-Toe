@@ -3,7 +3,6 @@ package tictactoe
 import (
 	"GoTicTacToe/pkg/api"
 	"encoding/json"
-	"fmt"
 	"os"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -24,7 +23,7 @@ func (g *Game) Update() error {
 	case Pause:
 		//refreshPauseMenu(g)
 	case LastGamesMenu:
-		refreshLastGamesMenu(g)
+		refreshLastGamesMenu(g, playerInput)
 	}
 
 	return nil
@@ -66,32 +65,18 @@ func getNowPlaying(g *Game) Symbol {
 	return Circle
 }
 
-<<<<<<< pkg/tictactoe/gameLogic.go
 func refreshMainMenu(g *Game, input InputEvent) {
 	if input.eventType == Mouse {
-		//g.GameState = Playing
-
-		if input.mouseX > 0 &&
-			input.mouseX < (WINDOW_W/3) &&
-			input.mouseY > WINDOW_W &&
-			input.mouseY < WINDOW_H {
-			fmt.Printf("ok")
+		if input.mouseY >= 230 && input.mouseY < 270 { // check start button
 			g.GameState = Playing
-		}
-
-=======
-func refreshMainMenu(g *Game) {
-	if g.PlayerInput.eventType == Mouse {
-		if g.PlayerInput.mouseY >= 230 && g.PlayerInput.mouseY < 270 { // check start button
-			g.GameState = Playing
-		} else if g.PlayerInput.mouseY >= 470 && g.PlayerInput.mouseY < 510 { // check game history button
+		} else if input.mouseY >= 470 && input.mouseY < 510 { // check game history button
 			g.GameState = LastGamesMenu
-		} else if g.PlayerInput.mouseX >= 370 && g.PlayerInput.mouseY > 570 { // check game exiting button
+		} else if input.mouseX >= 370 && input.mouseY > 570 { // check game exiting button
 			os.Exit(0)
-		} else if g.PlayerInput.mouseY >= 350 && g.PlayerInput.mouseY < 390 { // check gamemode section
-			if g.PlayerInput.mouseX < 190 { // check multiplayer button
+		} else if input.mouseY >= 350 && input.mouseY < 390 { // check gamemode section
+			if input.mouseX < 190 { // check multiplayer button
 				g.GameMode = MultiPlayer
-			} else if g.PlayerInput.mouseX > 300 { // check IARandom button
+			} else if input.mouseX > 300 { // check IARandom button
 				g.GameMode = IARandom
 			} else { // if not multiplayer and not IARandom, then it is IA
 				g.GameMode = IA
@@ -100,10 +85,9 @@ func refreshMainMenu(g *Game) {
 	}
 }
 
-func refreshLastGamesMenu(g *Game) {
-	if g.PlayerInput.eventType == Mouse {
+func refreshLastGamesMenu(g *Game, input InputEvent) {
+	if input.eventType == Mouse {
 		g.GameState = MainMenu
->>>>>>> pkg/tictactoe/gameLogic.go
 	}
 }
 
@@ -212,16 +196,3 @@ func checkWinner(g *Game, x int, y int, sym Symbol) bool {
 
 	return false
 }
-<<<<<<< pkg/tictactoe/gameLogic.go
-=======
-
-func (g *Game) InitGame() {
-	g.GameState = MainMenu
-	g.GenerateAssets()
-	g.GenerateFonts()
-	go g.processMainMenuAnimation()
-	g.GameMode = MultiPlayer
-
-	setupWindow(g)
-}
->>>>>>> pkg/tictactoe/gameLogic.go

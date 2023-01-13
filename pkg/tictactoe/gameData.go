@@ -37,7 +37,6 @@ const (
 	MultiPlayer Mode = iota
 	IARandom
 	IA
-	IARandom
 )
 
 type State uint
