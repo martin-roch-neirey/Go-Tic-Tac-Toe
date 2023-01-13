@@ -14,6 +14,7 @@
 
 ## MySQL infos
 
+Création de la table :
 ```mysql
 CREATE TABLE games3(
                        id int auto_increment primary key,
@@ -21,6 +22,15 @@ CREATE TABLE games3(
                        properties json
 );
 ```
+Requête pour récupérer les 5 dernières games :
+```mysql
+SELECT * FROM
+    (
+        SELECT * FROM games3 ORDER BY id DESC LIMIT 5
+    ) AS sub
+ORDER BY id ASC;
+```
+
 
 winner values :
 - 0 : tie

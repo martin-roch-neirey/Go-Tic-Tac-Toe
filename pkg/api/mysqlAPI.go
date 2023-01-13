@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
+	"log"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -29,6 +31,30 @@ func GetGamesCount() int {
 	}
 
 	return count
+}
+
+func GetLastGames(number int) {
+	db := getDatabaseConnection()
+	defer closeDatabaseConnection(db)
+
+	var query string
+	query = "SELECT * FROM (SELECT * FROM games3 ORDER BY id DESC LIMIT 3) AS sub ORDER BY id ASC;"
+	query = strings.Replace(query, "VAL1", strconv.Itoa(number), 1)
+
+	var games []string
+	rows, _ := db.Query(query)
+
+	for rows.Next() {
+		var value string
+		err := rows.Scan(value)
+		if err != nil {
+			log.Fatal(err)
+		} else {
+			games = append(games, value)
+		}
+	}
+
+	fmt.Println(games)
 }
 
 func UploadNewGame(json string) {
@@ -57,8 +83,11 @@ func closeDatabaseConnection(db *sql.DB) {
 
 func main() { // to test, change package to main in this file and all files of the folder utils
 	UploadNewGame("{}")
-	fmt.Println(GetGamesCount())
+	/*
+		fmt.Println(GetGamesCount())
 
-	UploadNewGame("{}")
-	fmt.Println(GetGamesCount())
+		UploadNewGame("{}")
+		fmt.Println(GetGamesCount())*/
+
+	GetLastGames(3)
 }

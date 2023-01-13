@@ -5,33 +5,43 @@ import (
 	"GoTicTacToe/resources"
 	"bytes"
 	"fmt"
+	"image"
+	"image/color"
+	"log"
+	"strings"
+	"time"
+
 	"github.com/fogleman/gg"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/examples/resources/fonts"
 	"github.com/hajimehoshi/ebiten/v2/text"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/opentype"
-	"image"
-	"image/color"
-	"log"
-	"strings"
-	"time"
 )
 
 func (g *Game) Draw(screen *ebiten.Image) {
 
 	switch g.GameState {
 	case MainMenu:
-		text.Draw(screen, "TIC TAC TOE", g.Fonts["title"], WINDOW_W/4, WINDOW_H/2.5, color.White)
-		DrawCenteredText(screen, api.GetTranslation("click_to_play", lang), animatedFont, WINDOW_H/2, color.White)
+		text.Draw(screen, "TIC TAC TOE", g.Fonts["title"], WINDOW_W/4, WINDOW_H/3, color.White)
+		DrawCenteredText(screen, api.GetTranslation("click_to_play", lang), animatedFont, WINDOW_H/2.5, color.White)
 		g.DrawSymbol(0, 0, Cross, screen)
-		g.DrawSymbol(2, 2, Circle, screen)
+		g.DrawSymbol(2, 0, Circle, screen)
+		g.DrawGameModeSelection(screen)
+		DrawCenteredText(screen, api.GetTranslation("recent_games_button", lang), g.Fonts["button"], WINDOW_H*0.8, color.White)
 	case Playing:
 		g.DrawGameBoard(screen)
-
+		msgMarks := strings.Replace(api.GetTranslation("marks", lang), "{xMarks}",
+			fmt.Sprintf("%v", g.XMarks), 1)
+		msgMarks = strings.Replace(msgMarks, "{oMarks}",
+			fmt.Sprintf("%v", g.OMarks), 1)
+		DrawCenteredText(screen, msgMarks, g.Fonts["normal"], WINDOW_H-10*LINE_THICKNESS, color.White)
 	case Finished:
 		g.DrawGameBoard(screen)
-		g.DrawWinBar(screen)
+		g.DrawWinRod(screen)
+	case LastGamesMenu:
+		DrawCenteredText(screen, "Dernières parties jouées", g.Fonts["button"], WINDOW_H/10, color.White)
+
 	}
 
 	msgFPS := strings.Replace(api.GetTranslation("tps_fps", lang), "{tps}",
@@ -39,14 +49,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	msgFPS = strings.Replace(msgFPS, "{fps}",
 		fmt.Sprintf("%0.2f", ebiten.CurrentFPS()), 1)
 	text.Draw(screen, msgFPS, g.Fonts["normal"], 0, WINDOW_H-LINE_THICKNESS, color.White)
-
-	msgMarks := strings.Replace(api.GetTranslation("marks", lang), "{xMarks}",
-		fmt.Sprintf("%v", g.XMarks), 1)
-	msgMarks = strings.Replace(msgMarks, "{oMarks}",
-		fmt.Sprintf("%v", g.OMarks), 1)
-	DrawCenteredText(screen, msgMarks, g.Fonts["normal"], WINDOW_H-10*LINE_THICKNESS, color.White)
-	// text.Draw(screen, msgMarks, g.Fonts["normal"], 0, WINDOW_H-LINE_THICKNESS, color.White)
-
+	text.Draw(screen, "Quitter le jeu", g.Fonts["normal"], WINDOW_W-100, WINDOW_H-LINE_THICKNESS, color.White)
 }
 
 func (g *Game) DrawGameBoard(screen *ebiten.Image) {
@@ -72,23 +75,23 @@ func (g *Game) DrawSymbol(x int, y int, sym Symbol, screen *ebiten.Image) {
 	}
 }
 
-func (g *Game) DrawWinBar(screen *ebiten.Image) {
+func (g *Game) DrawWinRod(screen *ebiten.Image) {
 
 	opSymbol := &ebiten.DrawImageOptions{}
-	pos := 1
-	v := 2
 
-	switch v {
-	case 0:
-		opSymbol.GeoM.Translate(0, float64(WINDOW_W/3)*float64(pos))
+	switch g.WinRod.rodType {
+	case HRod:
+		opSymbol.GeoM.Translate(0, float64(WINDOW_W/3)*float64(g.WinRod.location))
 		screen.DrawImage(g.Assets["win_bar_h"], opSymbol)
 
-	case 1:
-		opSymbol.GeoM.Translate(float64(WINDOW_W/3)*float64(pos), 0)
+	case VRod:
+		opSymbol.GeoM.Translate(float64(WINDOW_W/3)*float64(g.WinRod.location), 0)
 		screen.DrawImage(g.Assets["win_bar_v"], opSymbol)
 
-	case 2:
+	case D1Rod:
 		screen.DrawImage(g.Assets["win_bar_d1"], opSymbol)
+
+	case D2Rod:
 		screen.DrawImage(g.Assets["win_bar_d2"], opSymbol)
 	}
 
@@ -183,6 +186,24 @@ func (g *Game) GenerateFonts() {
 
 	g.Fonts["title"], err = opentype.NewFace(tt, &opentype.FaceOptions{
 		Size:    40,
+		DPI:     72,
+		Hinting: font.HintingFull,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	g.Fonts["subtitle"], err = opentype.NewFace(tt, &opentype.FaceOptions{
+		Size:    32,
+		DPI:     72,
+		Hinting: font.HintingFull,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	g.Fonts["button"], err = opentype.NewFace(tt, &opentype.FaceOptions{
+		Size:    28,
 		DPI:     72,
 		Hinting: font.HintingFull,
 	})
@@ -326,6 +347,38 @@ func DrawCenteredText(screen *ebiten.Image, s string, font font.Face, height int
 	bounds := text.BoundString(font, s)
 	x, y := WINDOW_W/2-bounds.Min.X-bounds.Dx()/2, height-bounds.Min.Y-bounds.Dy()/2
 	text.Draw(screen, s, font, x, y, color)
+}
+
+func DrawLeftText(screen *ebiten.Image, s string, font font.Face, height int, color color.Color) {
+	bounds := text.BoundString(font, s)
+	x, y := 20, height-bounds.Min.Y-bounds.Dy()/2 // 20 of left padding
+	text.Draw(screen, s, font, x, y, color)
+}
+
+func DrawRightText(screen *ebiten.Image, s string, font font.Face, height int, color color.Color) {
+	bounds := text.BoundString(font, s)
+	x, y := WINDOW_W-bounds.Min.X-bounds.Dx()-20, height-bounds.Min.Y-bounds.Dy()/2 // 20 of right padding
+	text.Draw(screen, s, font, x, y, color)
+}
+
+func (g *Game) DrawGameModeSelection(screen *ebiten.Image) {
+	selectedColor := color.RGBA{45, 255, 45, 200}
+	heightOffset := int(WINDOW_H * 0.6)
+
+	switch g.GameMode {
+	case MultiPlayer:
+		DrawLeftText(screen, "Multiplayer", g.Fonts["button"], heightOffset, selectedColor)
+		DrawCenteredText(screen, "IA", g.Fonts["button"], heightOffset, color.White)
+		DrawRightText(screen, "IARandom", g.Fonts["button"], heightOffset, color.White)
+	case IA:
+		DrawLeftText(screen, "Multiplayer", g.Fonts["button"], heightOffset, color.White)
+		DrawCenteredText(screen, "IA", g.Fonts["button"], heightOffset, selectedColor)
+		DrawRightText(screen, "IARandom", g.Fonts["button"], heightOffset, color.White)
+	case IARandom:
+		DrawLeftText(screen, "Multiplayer", g.Fonts["button"], heightOffset, color.White)
+		DrawCenteredText(screen, "IA", g.Fonts["button"], heightOffset, color.White)
+		DrawRightText(screen, "IARandom", g.Fonts["button"], heightOffset, selectedColor)
+	}
 }
 
 func setupWindow(g *Game) {
