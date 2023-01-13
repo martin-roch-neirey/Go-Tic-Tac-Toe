@@ -3,6 +3,7 @@ package tictactoe
 import (
 	"GoTicTacToe/pkg/api"
 	"encoding/json"
+	"os"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -57,6 +58,8 @@ func refreshMainMenu(g *Game) {
 			g.GameState = Playing
 		} else if g.PlayerInput.mouseY >= 470 && g.PlayerInput.mouseY < 510 { // check game history button
 			g.GameState = LastGamesMenu
+		} else if g.PlayerInput.mouseX >= 370 && g.PlayerInput.mouseY > 570 { // check game exiting button
+			os.Exit(0)
 		} else if g.PlayerInput.mouseY >= 350 && g.PlayerInput.mouseY < 390 { // check gamemode section
 			if g.PlayerInput.mouseX < 190 { // check multiplayer button
 				g.GameMode = MultiPlayer

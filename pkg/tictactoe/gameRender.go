@@ -49,8 +49,6 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		fmt.Sprintf("%0.2f", ebiten.CurrentFPS()), 1)
 	text.Draw(screen, msgFPS, g.Fonts["normal"], 0, WINDOW_H-LINE_THICKNESS, color.White)
 	text.Draw(screen, "Quitter le jeu", g.Fonts["normal"], WINDOW_W-100, WINDOW_H-LINE_THICKNESS, color.White)
-
-	//text.Draw(screen, "I", g.Fonts["button"], 300, 370, color.White)
 }
 
 func (g *Game) DrawGameBoard(screen *ebiten.Image) {
