@@ -2,6 +2,7 @@ package api
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
@@ -15,12 +16,21 @@ var gamesCountCache int
 var isLastGamesCacheValid = false
 var lastGamesCache []string
 
-func getDatabaseConnection() *sql.DB {
+func getDatabaseConnection() (*sql.DB, error) {
 	db, err := sql.Open("mysql", "root:@tcp(127.0.0.1:3306)/test")
 	if err != nil {
-		panic(err.Error())
+		return nil, errors.New("mySQL DB not reachable")
 	}
-	return db
+	return db, nil
+}
+
+func IsSqlApiUsable() bool {
+	db, err := getDatabaseConnection()
+	pingError := db.Ping()
+	if pingError != nil || err != nil {
+		return false
+	}
+	return true
 }
 
 func GetGamesCount() int {
@@ -28,7 +38,7 @@ func GetGamesCount() int {
 		return gamesCountCache
 	}
 
-	db := getDatabaseConnection()
+	db, _ := getDatabaseConnection()
 	defer closeDatabaseConnection(db)
 
 	row := db.QueryRow("SELECT COUNT(*) FROM games3")
@@ -50,11 +60,11 @@ func GetLastGames() []string {
 		return lastGamesCache
 	}
 
-	db := getDatabaseConnection()
+	db, _ := getDatabaseConnection()
 	defer closeDatabaseConnection(db)
 
 	var query string
-	query = "SELECT * FROM (SELECT * FROM games3 ORDER BY id DESC LIMIT 5) AS sub ORDER BY id ASC;"
+	query = "SELECT * FROM (SELECT * FROM games3 ORDER BY id DESC LIMIT 5) AS sub ORDER BY id DESC;"
 	// query = strings.Replace(query, "VAL1", strconv.Itoa(number), 1)
 
 	var games []string
@@ -80,7 +90,7 @@ func GetLastGames() []string {
 }
 
 func UploadNewGame(json string) {
-	db := getDatabaseConnection()
+	db, _ := getDatabaseConnection()
 	defer closeDatabaseConnection(db)
 
 	var query string
@@ -107,14 +117,4 @@ func validateCache(variable *bool) {
 	*variable = true
 	time.Sleep(10 * time.Second)
 	*variable = false
-}
-func main() { // to test, change package to main in this file and all files of the folder utils
-	UploadNewGame("{}")
-	/*
-		fmt.Println(GetGamesCount())
-
-		UploadNewGame("{}")
-		fmt.Println(GetGamesCount())*/
-
-	GetLastGames()
 }

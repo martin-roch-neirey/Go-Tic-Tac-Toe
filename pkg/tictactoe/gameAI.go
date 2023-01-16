@@ -43,7 +43,6 @@ func (g *Game) AIPlaceRandom() {
 	randomIndex := rand.Intn(len(emptyCase))
 
 	g.GameBoard[emptyCase[randomIndex].X][emptyCase[randomIndex].Y] = getNowPlaying(g)
-	incrementMarksCounter(g)
 	if checkWinner(g, emptyCase[randomIndex].X, emptyCase[randomIndex].Y, getNowPlaying(g)) {
 		g.GameState = Finished
 		return
@@ -54,7 +53,6 @@ func (g *Game) AIPlaceRandom() {
 
 // AIPlace places a Circle with a minimax Algo on gameboard and then checks the victory condition.
 func (g *Game) AIPlace() {
-
 	bestScore := -1000
 	bestMove := Case{-1, -1}
 	emptyCase := g.AIGetEmptyCases()

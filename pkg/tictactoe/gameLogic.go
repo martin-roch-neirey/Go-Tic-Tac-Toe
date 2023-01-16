@@ -11,7 +11,7 @@ import (
 
 func (g *Game) Update() error {
 
-	playerInput := GetInputs()
+	playerInput := getInputs()
 
 	switch g.GameState {
 	case MainMenu:
@@ -31,15 +31,16 @@ func (g *Game) Update() error {
 
 func (g *Game) InitGame() {
 	g.GameState = MainMenu
+	g.Lang = "fr-FR"
 	g.GenerateAssets()
 	g.GenerateFonts()
 	go g.processMainMenuAnimation()
 	g.GameMode = IA
-
+	g.SqlUsable = api.IsSqlApiUsable()
 	setupWindow(g)
 }
 
-func GetInputs() InputEvent {
+func getInputs() InputEvent {
 
 	input := InputEvent{Event(None), 0, 0}
 
@@ -64,9 +65,10 @@ func getNowPlaying(g *Game) Symbol {
 
 func refreshMainMenu(g *Game, input InputEvent) {
 	if input.eventType == Mouse {
+		checkLanguageButtons(g, input)
 		if input.mouseY >= 230 && input.mouseY < 270 { // check start button
 			g.GameState = Playing
-		} else if input.mouseY >= 470 && input.mouseY < 510 { // check game history button
+		} else if input.mouseY >= 470 && input.mouseY < 510 && g.SqlUsable { // check game history button
 			g.GameState = LastGamesMenu
 		} else if input.mouseX >= 350 && input.mouseY > 570 { // check game exiting button
 			os.Exit(0)
@@ -82,8 +84,21 @@ func refreshMainMenu(g *Game, input InputEvent) {
 	}
 }
 
+func checkLanguageButtons(g *Game, input InputEvent) {
+	if input.mouseY <= WINDOW_H && input.mouseY > WINDOW_H-15 {
+		if input.mouseX >= 180 && input.mouseX < 217 {
+			g.Lang = "fr-FR"
+		} else if input.mouseX >= 217 && input.mouseX < 258 {
+			g.Lang = "en-US"
+		} else if input.mouseX >= 258 && input.mouseX < 290 {
+			g.Lang = "de-DE"
+		}
+	}
+}
+
 func refreshLastGamesMenu(g *Game, input InputEvent) {
 	if input.eventType == Mouse {
+		checkLanguageButtons(g, input)
 		if input.mouseY > 500 && input.mouseY < 550 {
 			g.GameState = MainMenu
 		}
@@ -114,6 +129,7 @@ func refreshLastGamesMenu(g *Game, input InputEvent) {
 func refreshInGame(g *Game, input InputEvent) {
 
 	if input.eventType == Mouse {
+		checkLanguageButtons(g, input)
 		// check if on game area
 		if input.mouseX > 0 &&
 			input.mouseX < WINDOW_W &&
@@ -126,7 +142,12 @@ func refreshInGame(g *Game, input InputEvent) {
 			// place a symbol
 			if g.GameBoard[pX][pY] == None {
 				g.GameBoard[pX][pY] = getNowPlaying(g)
-				incrementMarksCounter(g)
+				switch getNowPlaying(g) {
+				case Cross:
+					g.XMarks++
+				case Circle:
+					g.OMarks++
+				}
 				if checkWinner(g, pX, pY, getNowPlaying(g)) {
 					g.GameState = Finished
 					return
@@ -140,8 +161,10 @@ func refreshInGame(g *Game, input InputEvent) {
 
 				if g.GameMode == IA {
 					g.AIPlace()
+					g.OMarks++
 				} else if g.GameMode == IARandom {
 					g.AIPlaceRandom()
+					g.OMarks++
 				}
 
 			}
@@ -152,20 +175,22 @@ func refreshInGame(g *Game, input InputEvent) {
 }
 
 func refreshOldBoardViewMenu(g *Game, input InputEvent) {
-	if input.eventType == Mouse {
+	if input.eventType == Mouse || input.eventType == Quit {
+		checkLanguageButtons(g, input)
 		g.GameState = LastGamesMenu
 	}
 }
 
 func proceedEndGame(g *Game, input InputEvent) {
 	g.CurrentTurn++
-	if sql && !sqlProceed {
+	if g.SqlUsable && !g.SqlProceed {
 		jsonAsBytes, _ := json.Marshal(g)
 		jsonString := string(jsonAsBytes[:])
 		api.UploadNewGame(jsonString)
-		sqlProceed = true
+		g.SqlProceed = true
 	}
-	if input.eventType == Mouse {
+	if input.eventType == Mouse || input.eventType == Quit {
+		checkLanguageButtons(g, input)
 		var newBoard [3][3]Symbol
 		g.GameBoard = newBoard
 		g.CurrentTurn = 0
@@ -174,15 +199,7 @@ func proceedEndGame(g *Game, input InputEvent) {
 		g.Winner = "/"
 		g.WinRod.rodType = NORod
 		g.GameState = MainMenu
-		sqlProceed = false
-	}
-}
-
-func incrementMarksCounter(g *Game) {
-	if getNowPlaying(g) == Cross {
-		g.XMarks++
-	} else {
-		g.OMarks++
+		g.SqlProceed = false
 	}
 }
 

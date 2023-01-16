@@ -10,18 +10,12 @@ const (
 	WINDOW_H       = 600
 	LINE_THICKNESS = 6
 	SYMBOL_SIZE    = 50
-	FONT_SIZE      = 15
-	KEY_PRESS_TIME = 60
 )
 
-var lang = "fr-FR"
 var animatedSize = 1
 var animatedFont font.Face
 var animatedFontList []font.Face
 var listPointer = 0
-
-var sql = true // TODO delete later, set to false if DB is not online
-var sqlProceed = false
 
 type Symbol uint
 
@@ -92,6 +86,7 @@ type WinRod struct {
 type Game struct {
 	Assets                map[string]*ebiten.Image
 	Fonts                 map[string]font.Face
+	Lang                  string
 	GameBoard             [3][3]Symbol
 	GameState             State
 	GameMode              Mode
@@ -100,6 +95,8 @@ type Game struct {
 	XMarks                uint
 	OMarks                uint
 	Winner                string
+	SqlUsable             bool
+	SqlProceed            bool
 	LastGameEntries       []OldGameEntry
 	LastGameEntriesViewId int
 }
