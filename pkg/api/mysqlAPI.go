@@ -1,28 +1,51 @@
+// Copyright (c) 2022 Haute école d'ingerie et d'architecture de Fribourg
+// SPDX-License-Identifier: Apache-2.0
+// Author:  William Margueron & Martin Roch-Neirey
+
 package api
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
-	"strconv"
 	"strings"
 	"time"
 )
 
-func getDatabaseConnection() *sql.DB {
-	db, err := sql.Open("mysql", "gouser:pass@tcp(127.0.0.1:3306)/tictactoe")
+var isGamesCountCacheValid = false
+var gamesCountCache int
+
+var isLastGamesCacheValid = false
+var lastGamesCache []string
+
+func getDatabaseConnection() (*sql.DB, error) {
+	db, err := sql.Open("mysql", "root:@tcp(127.0.0.1:3306)/test")
 	if err != nil {
-		panic(err.Error())
+		return nil, errors.New("mySQL DB not reachable")
 	}
-	return db
+	return db, nil
+}
+
+func IsSqlApiUsable() bool {
+	db, err := getDatabaseConnection()
+	pingError := db.Ping()
+	if pingError != nil || err != nil {
+		return false
+	}
+	return true
 }
 
 func GetGamesCount() int {
-	db := getDatabaseConnection()
+	if isGamesCountCacheValid {
+		return gamesCountCache
+	}
+
+	db, _ := getDatabaseConnection()
 	defer closeDatabaseConnection(db)
 
-	row := db.QueryRow("SELECT COUNT(*) FROM games")
+	row := db.QueryRow("SELECT COUNT(*) FROM games3")
 
 	var count int
 	err := row.Scan(&count)
@@ -30,23 +53,31 @@ func GetGamesCount() int {
 		panic(err.Error())
 	}
 
+	gamesCountCache = count
+	go validateCache(&isGamesCountCacheValid)
 	return count
 }
 
-func GetLastGames(number int) {
-	db := getDatabaseConnection()
+func GetLastGames() []string {
+
+	if isLastGamesCacheValid {
+		return lastGamesCache
+	}
+
+	db, _ := getDatabaseConnection()
 	defer closeDatabaseConnection(db)
 
 	var query string
-	query = "SELECT * FROM (SELECT * FROM games3 ORDER BY id DESC LIMIT 3) AS sub ORDER BY id ASC;"
-	query = strings.Replace(query, "VAL1", strconv.Itoa(number), 1)
+	query = "SELECT * FROM (SELECT * FROM games3 ORDER BY id DESC LIMIT 5) AS sub ORDER BY id DESC;"
 
 	var games []string
 	rows, _ := db.Query(query)
 
 	for rows.Next() {
 		var value string
-		err := rows.Scan(value)
+		var id int
+		var date string
+		err := rows.Scan(&id, &date, &value)
 		if err != nil {
 			log.Fatal(err)
 		} else {
@@ -55,18 +86,20 @@ func GetLastGames(number int) {
 	}
 
 	fmt.Println(games)
+
+	go validateCache(&isLastGamesCacheValid)
+	lastGamesCache = games
+	return games
 }
 
 func UploadNewGame(json string) {
-	db := getDatabaseConnection()
+	db, _ := getDatabaseConnection()
 	defer closeDatabaseConnection(db)
 
 	var query string
 	query = "INSERT INTO games3(date, properties) VALUES('VAL1', 'VAL2');"
 	query = strings.Replace(query, "VAL1", time.Now().Format("2006-01-02 15-04-05"), 1)
 	query = strings.Replace(query, "VAL2", json, 1)
-
-	fmt.Println(query)
 
 	_, err := db.Query(query)
 	if err != nil {
@@ -81,13 +114,8 @@ func closeDatabaseConnection(db *sql.DB) {
 	}
 }
 
-func main() { // to test, change package to main in this file and all files of the folder utils
-	UploadNewGame("{}")
-	/*
-		fmt.Println(GetGamesCount())
-
-		UploadNewGame("{}")
-		fmt.Println(GetGamesCount())*/
-
-	GetLastGames(3)
+func validateCache(variable *bool) {
+	*variable = true
+	time.Sleep(10 * time.Second)
+	*variable = false
 }

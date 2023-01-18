@@ -1,3 +1,7 @@
+// Copyright (c) 2022 Haute école d'ingerie et d'architecture de Fribourg
+// SPDX-License-Identifier: Apache-2.0
+// Author:  William Margueron & Martin Roch-Neirey
+
 package api
 
 import (
@@ -17,7 +21,7 @@ var fallbackCache = make(map[string]string)
 
 func GetTranslation(id, lang string) string {
 	if !loaded || languageLoaded != lang {
-		loadTranslations(lang) // Todo get here language chosen by player
+		loadTranslations(lang)
 		loaded = true
 	}
 

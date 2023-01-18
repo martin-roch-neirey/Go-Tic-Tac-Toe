@@ -1,3 +1,7 @@
+// Copyright (c) 2022 Haute école d'ingerie et d'architecture de Fribourg
+// SPDX-License-Identifier: Apache-2.0
+// Author:  William Margueron & Martin Roch-Neirey
+
 package tictactoe
 
 import (
@@ -11,7 +15,7 @@ import (
 
 func (g *Game) Update() error {
 
-	playerInput := GetInputs()
+	playerInput := getInputs()
 
 	switch g.GameState {
 	case MainMenu:
@@ -20,10 +24,10 @@ func (g *Game) Update() error {
 		refreshInGame(g, playerInput)
 	case Finished:
 		proceedEndGame(g, playerInput)
-	case Pause:
-		//refreshPauseMenu(g)
 	case LastGamesMenu:
 		refreshLastGamesMenu(g, playerInput)
+	case OldBoardView:
+		refreshOldBoardViewMenu(g, playerInput)
 	}
 
 	return nil
@@ -31,15 +35,16 @@ func (g *Game) Update() error {
 
 func (g *Game) InitGame() {
 	g.GameState = MainMenu
+	g.Lang = "fr-FR"
 	g.GenerateAssets()
 	g.GenerateFonts()
 	go g.processMainMenuAnimation()
 	g.GameMode = IA
-
+	g.SqlUsable = api.IsSqlApiUsable()
 	setupWindow(g)
 }
 
-func GetInputs() InputEvent {
+func getInputs() InputEvent {
 
 	input := InputEvent{Event(None), 0, 0}
 
@@ -48,10 +53,7 @@ func GetInputs() InputEvent {
 		input.mouseX, input.mouseY = ebiten.CursorPosition()
 	}
 
-	if inpututil.KeyPressDuration(ebiten.KeyR) == KEY_PRESS_TIME {
-		input.eventType = Restart
-	}
-	if inpututil.KeyPressDuration(ebiten.KeyEscape) == KEY_PRESS_TIME {
+	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
 		input.eventType = Quit
 	}
 
@@ -67,11 +69,12 @@ func getNowPlaying(g *Game) Symbol {
 
 func refreshMainMenu(g *Game, input InputEvent) {
 	if input.eventType == Mouse {
+		checkLanguageButtons(g, input)
 		if input.mouseY >= 230 && input.mouseY < 270 { // check start button
 			g.GameState = Playing
-		} else if input.mouseY >= 470 && input.mouseY < 510 { // check game history button
+		} else if input.mouseY >= 470 && input.mouseY < 510 && g.SqlUsable { // check game history button
 			g.GameState = LastGamesMenu
-		} else if input.mouseX >= 370 && input.mouseY > 570 { // check game exiting button
+		} else if input.mouseX >= 350 && input.mouseY > 570 { // check game exiting button
 			os.Exit(0)
 		} else if input.mouseY >= 350 && input.mouseY < 390 { // check gamemode section
 			if input.mouseX < 190 { // check multiplayer button
@@ -85,15 +88,52 @@ func refreshMainMenu(g *Game, input InputEvent) {
 	}
 }
 
+func checkLanguageButtons(g *Game, input InputEvent) {
+	if input.mouseY <= WINDOW_H && input.mouseY > WINDOW_H-15 {
+		if input.mouseX >= 180 && input.mouseX < 217 {
+			g.Lang = "fr-FR"
+		} else if input.mouseX >= 217 && input.mouseX < 258 {
+			g.Lang = "en-US"
+		} else if input.mouseX >= 258 && input.mouseX < 290 {
+			g.Lang = "de-DE"
+		}
+	}
+}
+
 func refreshLastGamesMenu(g *Game, input InputEvent) {
 	if input.eventType == Mouse {
+		checkLanguageButtons(g, input)
+		if input.mouseY > 500 && input.mouseY < 550 {
+			g.GameState = MainMenu
+		}
+		if input.mouseX > 350 {
+			if input.mouseY > 160 && input.mouseY < 200 {
+				g.LastGameEntriesViewId = 0
+				g.GameState = OldBoardView
+			} else if input.mouseY > 210 && input.mouseY < 250 {
+				g.LastGameEntriesViewId = 1
+				g.GameState = OldBoardView
+			} else if input.mouseY > 260 && input.mouseY < 300 {
+				g.LastGameEntriesViewId = 2
+				g.GameState = OldBoardView
+			} else if input.mouseY > 310 && input.mouseY < 350 {
+				g.LastGameEntriesViewId = 3
+				g.GameState = OldBoardView
+			} else if input.mouseY > 360 && input.mouseY < 400 {
+				g.LastGameEntriesViewId = 4
+				g.GameState = OldBoardView
+			}
+		}
+	} else if input.eventType == Quit {
 		g.GameState = MainMenu
 	}
+
 }
 
 func refreshInGame(g *Game, input InputEvent) {
 
 	if input.eventType == Mouse {
+		checkLanguageButtons(g, input)
 		// check if on game area
 		if input.mouseX > 0 &&
 			input.mouseX < WINDOW_W &&
@@ -106,7 +146,12 @@ func refreshInGame(g *Game, input InputEvent) {
 			// place a symbol
 			if g.GameBoard[pX][pY] == None {
 				g.GameBoard[pX][pY] = getNowPlaying(g)
-				incrementMarksCounter(g)
+				switch getNowPlaying(g) {
+				case Cross:
+					g.XMarks++
+				case Circle:
+					g.OMarks++
+				}
 				if checkWinner(g, pX, pY, getNowPlaying(g)) {
 					g.GameState = Finished
 					return
@@ -118,10 +163,13 @@ func refreshInGame(g *Game, input InputEvent) {
 					return
 				}
 
+				// IA MOVE
 				if g.GameMode == IA {
 					g.AIPlace()
+					g.OMarks++
 				} else if g.GameMode == IARandom {
 					g.AIPlaceRandom()
+					g.OMarks++
 				}
 
 			}
@@ -131,31 +179,32 @@ func refreshInGame(g *Game, input InputEvent) {
 	}
 }
 
+func refreshOldBoardViewMenu(g *Game, input InputEvent) {
+	if input.eventType == Mouse || input.eventType == Quit {
+		checkLanguageButtons(g, input)
+		g.GameState = LastGamesMenu
+	}
+}
+
 func proceedEndGame(g *Game, input InputEvent) {
 	g.CurrentTurn++
-	if sql && !sqlProceed {
+	if g.SqlUsable && !g.SqlProceed {
 		jsonAsBytes, _ := json.Marshal(g)
 		jsonString := string(jsonAsBytes[:])
 		api.UploadNewGame(jsonString)
-		sqlProceed = true
+		g.SqlProceed = true
 	}
-	if input.eventType == Mouse {
+	if input.eventType == Mouse || input.eventType == Quit {
+		checkLanguageButtons(g, input)
 		var newBoard [3][3]Symbol
 		g.GameBoard = newBoard
 		g.CurrentTurn = 0
 		g.XMarks = 0
 		g.OMarks = 0
+		g.Winner = "/"
 		g.WinRod.rodType = NORod
 		g.GameState = MainMenu
-		sqlProceed = false
-	}
-}
-
-func incrementMarksCounter(g *Game) {
-	if getNowPlaying(g) == Cross {
-		g.XMarks++
-	} else {
-		g.OMarks++
+		g.SqlProceed = false
 	}
 }
 
@@ -190,9 +239,10 @@ func checkWinner(g *Game, x int, y int, sym Symbol) bool {
 				g.WinRod.rodType = D2Rod
 			}
 
+			g.Winner = string(sym.toString())
 			return true
 		}
 	}
-
+	g.Winner = "/"
 	return false
 }

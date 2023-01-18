@@ -14,11 +14,13 @@ type Case struct {
 	X, Y int
 }
 
-// AI move type
+// AI move type for minimax algo
 const (
-	MAX_MOVE  = 10
-	MIN_MOVE  = 10
+	MAX_MOVE  = +10
+	MIN_MOVE  = -10
 	NULL_MOVE = 0
+	MAX_BEST  = -100
+	MIN_BEST  = +100
 )
 
 // AIGetEmptyCases returns a array with all empty Cases of gameBoard
@@ -43,7 +45,6 @@ func (g *Game) AIPlaceRandom() {
 	randomIndex := rand.Intn(len(emptyCase))
 
 	g.GameBoard[emptyCase[randomIndex].X][emptyCase[randomIndex].Y] = getNowPlaying(g)
-	incrementMarksCounter(g)
 	if checkWinner(g, emptyCase[randomIndex].X, emptyCase[randomIndex].Y, getNowPlaying(g)) {
 		g.GameState = Finished
 		return
@@ -55,24 +56,24 @@ func (g *Game) AIPlaceRandom() {
 // AIPlace places a Circle with a minimax Algo on gameboard and then checks the victory condition.
 func (g *Game) AIPlace() {
 
-	bestScore := -1000
+	bestVal := MAX_BEST
 	bestMove := Case{-1, -1}
-	emptyCase := g.AIGetEmptyCases()
 
-	for _, v := range emptyCase {
-
+	for _, v := range g.AIGetEmptyCases() {
+		// Place Circle and run minimax algo
 		g.GameBoard[v.X][v.Y] = Circle
-		score := minimax(g, 0, false)
+		moveVal := minimax(g, false)
+		// back move
 		g.GameBoard[v.X][v.Y] = None
 
-		if score > bestScore {
-			bestScore = score
-			bestMove = Case{v.X, v.Y}
+		// check best move
+		if moveVal > bestVal {
+			bestVal = moveVal
+			bestMove = v
 		}
 	}
 
 	g.GameBoard[bestMove.X][bestMove.Y] = getNowPlaying(g)
-
 	if checkWinner(g, bestMove.X, bestMove.Y, getNowPlaying(g)) {
 		g.GameState = Finished
 		return
@@ -81,42 +82,43 @@ func (g *Game) AIPlace() {
 }
 
 // minimax function evaluate actions and return best choice for AI
-func minimax(g *Game, depth int, isMax bool) int {
+func minimax(g *Game, isMax bool) int {
 
 	var best int
-	val := evaluate(g)
-	if val == MAX_MOVE {
-		return 10 - depth
+	// get score of current game state
+	score := evaluate(g)
+
+	// if max or min score return
+	if score == MAX_MOVE || score == MIN_MOVE {
+		return score
 	}
 
-	if val == MIN_MOVE {
-		return -10 + depth
+	// if empty case return
+	if len(g.AIGetEmptyCases()) == 0 {
+		return NULL_MOVE
 	}
 
-	emptyCases := g.AIGetEmptyCases()
-	if len(emptyCases) == 0 {
-		return 0
-	}
-
+	// maximize Circle to win
 	if isMax {
-		best = -1000
+		best = MAX_BEST
+		for _, v := range g.AIGetEmptyCases() {
+			// place Circle
+			g.GameBoard[v.X][v.Y] = Circle
+			// recursive minimax
+			best = max(minimax(g, !isMax), best)
+			// remove Circle
+			g.GameBoard[v.X][v.Y] = None
+		}
 	} else {
-		best = 1000
-	}
+		best = MIN_BEST
 
-	for x, array := range g.GameBoard {
-		for y, _ := range array {
-			if g.GameBoard[x][y] == None {
-				if isMax {
-					g.GameBoard[x][y] = Circle
-					best = max(best, minimax(g, depth+1, false))
-				} else {
-					g.GameBoard[x][y] = Cross
-					best = min(best, minimax(g, depth+1, true))
-				}
-
-				g.GameBoard[x][y] = None
-			}
+		for _, v := range g.AIGetEmptyCases() {
+			// place Cross
+			g.GameBoard[v.X][v.Y] = Cross
+			// recursive minimax
+			best = min(minimax(g, !isMax), best)
+			// remove Cross
+			g.GameBoard[v.X][v.Y] = None
 		}
 	}
 
@@ -125,28 +127,26 @@ func minimax(g *Game, depth int, isMax bool) int {
 
 // evaluate current state of game and give next best AI move
 func evaluate(g *Game) int {
-
-	for x, array := range g.GameBoard {
-
-		if g.GameBoard[x][0] == g.GameBoard[x][1] && g.GameBoard[x][1] == g.GameBoard[x][2] {
-			if g.GameBoard[x][0] == Circle {
+	for i := range g.GameBoard {
+		// check all ligne
+		if g.GameBoard[i][0] == g.GameBoard[i][1] && g.GameBoard[i][1] == g.GameBoard[i][2] {
+			if g.GameBoard[i][0] == Circle {
 				return MAX_MOVE
-			} else if g.GameBoard[x][0] == Cross {
+			} else if g.GameBoard[i][0] == Cross {
 				return MIN_MOVE
 			}
 		}
-
-		for y, _ := range array {
-			if g.GameBoard[0][y] == g.GameBoard[1][y] && g.GameBoard[1][y] == g.GameBoard[2][y] {
-				if g.GameBoard[0][y] == Circle {
-					return MAX_MOVE
-				} else if g.GameBoard[0][y] == Cross {
-					return MIN_MOVE
-				}
+		// check all colonne
+		if g.GameBoard[0][i] == g.GameBoard[1][i] && g.GameBoard[1][i] == g.GameBoard[2][i] {
+			if g.GameBoard[0][i] == Circle {
+				return MAX_MOVE
+			} else if g.GameBoard[0][i] == Cross {
+				return MIN_MOVE
 			}
 		}
 	}
 
+	// check diagonal 1
 	if g.GameBoard[0][0] == g.GameBoard[1][1] && g.GameBoard[1][1] == g.GameBoard[2][2] {
 		if g.GameBoard[0][0] == Circle {
 			return MAX_MOVE
@@ -154,8 +154,8 @@ func evaluate(g *Game) int {
 			return MIN_MOVE
 		}
 	}
-
-	if g.GameBoard[0][2] == g.GameBoard[1][1] && g.GameBoard[1][1] == g.GameBoard[2][2] {
+	// check diagonal 2
+	if g.GameBoard[0][2] == g.GameBoard[1][1] && g.GameBoard[1][1] == g.GameBoard[2][0] {
 		if g.GameBoard[0][2] == Circle {
 			return MAX_MOVE
 		} else if g.GameBoard[0][2] == Cross {

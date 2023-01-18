@@ -1,3 +1,7 @@
+// Copyright (c) 2022 Haute école d'ingerie et d'architecture de Fribourg
+// SPDX-License-Identifier: Apache-2.0
+// Author:  William Margueron & Martin Roch-Neirey
+
 package tictactoe
 
 import (
@@ -10,18 +14,12 @@ const (
 	WINDOW_H       = 600
 	LINE_THICKNESS = 6
 	SYMBOL_SIZE    = 50
-	FONT_SIZE      = 15
-	KEY_PRESS_TIME = 60
 )
 
-var lang = "fr-FR"
 var animatedSize = 1
 var animatedFont font.Face
 var animatedFontList []font.Face
 var listPointer = 0
-
-var sql = false // TODO delete later, set to false if DB is not online
-var sqlProceed = false
 
 type Symbol uint
 
@@ -30,6 +28,17 @@ const (
 	Cross  Symbol = 1
 	Circle Symbol = 4
 )
+
+func (s Symbol) toString() rune {
+	switch s {
+	case Cross:
+		return 'X'
+	case Circle:
+		return 'O'
+	default:
+		return '/'
+	}
+}
 
 type Mode uint
 
@@ -45,8 +54,8 @@ const (
 	MainMenu State = iota
 	Playing
 	Finished
-	Pause
 	LastGamesMenu
+	OldBoardView
 )
 
 type Event uint
@@ -54,7 +63,6 @@ type Event uint
 const (
 	Void Event = iota
 	Quit
-	Restart
 	Mouse
 )
 
@@ -80,14 +88,25 @@ type WinRod struct {
 }
 
 type Game struct {
-	Assets      map[string]*ebiten.Image
-	Fonts       map[string]font.Face
-	GameBoard   [3][3]Symbol
-	GameState   State
-	GameMode    Mode
-	WinRod      WinRod
-	CurrentTurn uint
-	XMarks      uint
-	OMarks      uint
-	Winner      string
+	Assets                map[string]*ebiten.Image
+	Fonts                 map[string]font.Face
+	Lang                  string
+	GameBoard             [3][3]Symbol
+	GameState             State
+	GameMode              Mode
+	WinRod                WinRod
+	CurrentTurn           uint
+	XMarks                uint
+	OMarks                uint
+	Winner                string
+	SqlUsable             bool
+	SqlProceed            bool
+	LastGameEntries       []OldGameEntry
+	LastGameEntriesViewId int
+}
+
+type OldGameEntry struct {
+	Mode   int     `json:"GameMode"`
+	Winner string  `json:"Winner"`
+	Board  [][]int `json:"GameBoard"`
 }
