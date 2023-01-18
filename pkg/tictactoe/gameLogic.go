@@ -159,6 +159,7 @@ func refreshInGame(g *Game, input InputEvent) {
 					return
 				}
 
+				// IA MOVE
 				if g.GameMode == IA {
 					g.AIPlace()
 					g.OMarks++

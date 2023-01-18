@@ -14,7 +14,7 @@ type Case struct {
 	X, Y int
 }
 
-// AI move type
+// AI move type for minimax algo
 const (
 	MAX_MOVE  = +10
 	MIN_MOVE  = -10
