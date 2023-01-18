@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Haute école d'ingerie et d'architecture de Fribourg
+// Copyright (c) 2022 Haute école d'ingénierie et d'architecture de Fribourg
 // SPDX-License-Identifier: Apache-2.0
 // Author:  William Margueron & Martin Roch-Neirey
 
@@ -25,6 +25,8 @@ import (
 	"golang.org/x/image/font/opentype"
 )
 
+// Draw function only applies to a game instance.
+// call Draw specific view function depending on game state
 func (g *Game) Draw(screen *ebiten.Image) {
 
 	switch g.GameState {
@@ -46,6 +48,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	DrawCenteredText(screen, "FR  |  EN  |  DE", g.Fonts["normal"], WINDOW_H-LINE_THICKNESS, color.White)
 }
 
+// drawOldBoardView draws view when player wants to see the gameboard of an old played game
 func drawOldBoardView(screen *ebiten.Image, g *Game) {
 	g.DrawGameBoard(screen)
 	DrawCenteredText(screen, api.GetTranslation("details_of_game", g.Lang), g.Fonts["normal"], WINDOW_H-15*LINE_THICKNESS, color.White)
@@ -68,6 +71,7 @@ func drawOldBoardView(screen *ebiten.Image, g *Game) {
 	}
 }
 
+// drawLastGamesMenuView draws 5 last games played menu
 func drawLastGamesMenuView(screen *ebiten.Image, g *Game) {
 	DrawCenteredText(screen, api.GetTranslation("last_played_games", g.Lang), g.Fonts["button"], WINDOW_H/10, color.White)
 	msgNumberOfGames := strings.Replace(api.GetTranslation("number_of_games", g.Lang), "{value}",
@@ -81,7 +85,7 @@ func drawLastGamesMenuView(screen *ebiten.Image, g *Game) {
 	var lastGames []string
 	lastGames = api.GetLastGames()
 	var lastGamesEntries []OldGameEntry
-	offset := 0
+	offset := 0 // height offset to write last games entries
 	for i := 0; i < 5; i++ {
 		offset = 50 * i
 		gameJson := lastGames[i]
@@ -89,8 +93,6 @@ func drawLastGamesMenuView(screen *ebiten.Image, g *Game) {
 		var gameMode string
 		var winner string
 		json.Unmarshal([]byte(gameJson), &entry)
-		//log.Printf("gamemode: %v", entry.Mode)
-		// log.Printf("board: %v", entry.Board)
 		switch entry.Mode {
 		case 0:
 			gameMode = "Multiplayer"
@@ -112,9 +114,11 @@ func drawLastGamesMenuView(screen *ebiten.Image, g *Game) {
 	g.LastGameEntries = lastGamesEntries
 }
 
+// drawFinishedView
+// It draws the game board, the win rod and the winner message
 func drawFinishedView(screen *ebiten.Image, g *Game) {
 	g.DrawGameBoard(screen)
-	g.DrawWinRod(screen)
+	g.drawWinRod(screen)
 	if g.Winner != "/" {
 		winnerTraduction := strings.Replace(api.GetTranslation("game_message_win", g.Lang), "{winner}",
 			g.Winner, 1)
@@ -125,6 +129,7 @@ func drawFinishedView(screen *ebiten.Image, g *Game) {
 	}
 }
 
+// drawPlayingView draws the game board and the marks count
 func drawPlayingView(screen *ebiten.Image, g *Game) {
 	g.DrawGameBoard(screen)
 	msgMarks := strings.Replace(api.GetTranslation("marks", g.Lang), "{xMarks}",
@@ -134,6 +139,7 @@ func drawPlayingView(screen *ebiten.Image, g *Game) {
 	DrawCenteredText(screen, msgMarks, g.Fonts["normal"], WINDOW_H-10*LINE_THICKNESS, color.White)
 }
 
+// drawMainMenuView draws the main menu view
 func drawMainMenuView(screen *ebiten.Image, g *Game) {
 	text.Draw(screen, "TIC TAC TOE", g.Fonts["title"], WINDOW_W/4, WINDOW_H/3, color.White)
 	DrawCenteredText(screen, api.GetTranslation("click_to_play", g.Lang), animatedFont, WINDOW_H/2.5, color.White)
@@ -146,6 +152,7 @@ func drawMainMenuView(screen *ebiten.Image, g *Game) {
 	DrawRightText(screen, api.GetTranslation("button_exiting", g.Lang), g.Fonts["normal"], WINDOW_H-LINE_THICKNESS, color.White)
 }
 
+// DrawGameBoard draws the game board.
 func (g *Game) DrawGameBoard(screen *ebiten.Image) {
 	screen.DrawImage(g.Assets["map"], nil)
 
@@ -156,8 +163,8 @@ func (g *Game) DrawGameBoard(screen *ebiten.Image) {
 	}
 }
 
+// DrawSymbol draws the given symbol at given location on given screen
 func (g *Game) DrawSymbol(x int, y int, sym Symbol, screen *ebiten.Image) {
-
 	opSymbol := &ebiten.DrawImageOptions{}
 	opSymbol.GeoM.Translate(float64(WINDOW_W/3)*float64(x), float64(WINDOW_W/3)*float64(y))
 
@@ -169,8 +176,8 @@ func (g *Game) DrawSymbol(x int, y int, sym Symbol, screen *ebiten.Image) {
 	}
 }
 
-func (g *Game) DrawWinRod(screen *ebiten.Image) {
-
+// drawWinRod draws winrod depending on game winrod type
+func (g *Game) drawWinRod(screen *ebiten.Image) {
 	opSymbol := &ebiten.DrawImageOptions{}
 
 	switch g.WinRod.rodType {
@@ -188,9 +195,9 @@ func (g *Game) DrawWinRod(screen *ebiten.Image) {
 	case D2Rod:
 		screen.DrawImage(g.Assets["win_bar_d2"], opSymbol)
 	}
-
 }
 
+// GenerateAssets is a one-time called function that creates all assets used by game
 func (g *Game) GenerateAssets() {
 	g.Assets = make(map[string]*ebiten.Image)
 
@@ -261,6 +268,7 @@ func (g *Game) GenerateAssets() {
 
 }
 
+// GenerateFonts is a one-time called function that creates all fonts used by game
 func (g *Game) GenerateFonts() {
 	g.Fonts = make(map[string]font.Face)
 
@@ -407,11 +415,12 @@ func (g *Game) GenerateFonts() {
 
 }
 
+// Layout is a function used by ebiten
 func (g *Game) Layout(outsideWidth int, outsideHeight int) (int, int) {
-
 	return WINDOW_W, WINDOW_H
 }
 
+// setAnimatedSize is called to switch animated size
 func setAnimatedSize() {
 	if listPointer == len(animatedFontList)-1 {
 		reverseFontsList(animatedFontList)
@@ -423,6 +432,7 @@ func setAnimatedSize() {
 	}
 }
 
+// reverseFontsList reverts an array
 func reverseFontsList(arr []font.Face) []font.Face {
 	for i, j := 0, len(arr)-1; i < j; i, j = i+1, j-1 {
 		arr[i], arr[j] = arr[j], arr[i]
@@ -430,6 +440,7 @@ func reverseFontsList(arr []font.Face) []font.Face {
 	return arr
 }
 
+// processMainMenuAnimation starts the animation of shiny text
 func (g *Game) processMainMenuAnimation() {
 	for {
 		setAnimatedSize()
@@ -437,24 +448,28 @@ func (g *Game) processMainMenuAnimation() {
 	}
 }
 
+// DrawCenteredText is a help function used to draw text centered on screen
 func DrawCenteredText(screen *ebiten.Image, s string, font font.Face, height int, color color.Color) {
 	bounds := text.BoundString(font, s)
 	x, y := WINDOW_W/2-bounds.Min.X-bounds.Dx()/2, height-bounds.Min.Y-bounds.Dy()/2
 	text.Draw(screen, s, font, x, y, color)
 }
 
+// DrawLeftText is a help function used to draw text on left part of screen
 func DrawLeftText(screen *ebiten.Image, s string, font font.Face, height int, color color.Color) {
 	bounds := text.BoundString(font, s)
 	x, y := 20, height-bounds.Min.Y-bounds.Dy()/2 // 20 of left padding
 	text.Draw(screen, s, font, x, y, color)
 }
 
+// DrawRightText is a help function used to draw text on right part of screen
 func DrawRightText(screen *ebiten.Image, s string, font font.Face, height int, color color.Color) {
 	bounds := text.BoundString(font, s)
 	x, y := WINDOW_W-bounds.Min.X-bounds.Dx()-20, height-bounds.Min.Y-bounds.Dy()/2 // 20 of right padding
 	text.Draw(screen, s, font, x, y, color)
 }
 
+// DrawGameModeSelection draws gamemode selection buttons
 func (g *Game) DrawGameModeSelection(screen *ebiten.Image) {
 	selectedColor := color.RGBA{45, 255, 45, 200}
 	heightOffset := int(WINDOW_H * 0.6)
@@ -475,6 +490,7 @@ func (g *Game) DrawGameModeSelection(screen *ebiten.Image) {
 	}
 }
 
+// setupWindow is a function used to set up game window
 func setupWindow(g *Game) {
 	ebiten.SetWindowSize(WINDOW_W, WINDOW_H)
 	var favicon []image.Image

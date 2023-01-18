@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Haute école d'ingerie et d'architecture de Fribourg
+// Copyright (c) 2022 Haute école d'ingénierie et d'architecture de Fribourg
 // SPDX-License-Identifier: Apache-2.0
 // Author:  William Margueron & Martin Roch-Neirey
 
@@ -7,12 +7,12 @@ package tictactoe
 import (
 	"GoTicTacToe/pkg/api"
 	"encoding/json"
-	"os"
-
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
+	"os"
 )
 
+// Update is called approximately 60 times per second (from ebiten.CurrentTPS())
 func (g *Game) Update() error {
 
 	playerInput := getInputs()
@@ -33,6 +33,7 @@ func (g *Game) Update() error {
 	return nil
 }
 
+// InitGame is called by main package after game instantiation
 func (g *Game) InitGame() {
 	g.GameState = MainMenu
 	g.Lang = "fr-FR"
@@ -44,6 +45,7 @@ func (g *Game) InitGame() {
 	setupWindow(g)
 }
 
+// getInputs() returns present inputs made by player actions
 func getInputs() InputEvent {
 
 	input := InputEvent{Event(None), 0, 0}
@@ -60,6 +62,7 @@ func getInputs() InputEvent {
 	return input
 }
 
+// Returns next Symbol to be placed
 func getNowPlaying(g *Game) Symbol {
 	if g.CurrentTurn%2 == 0 {
 		return Cross
@@ -67,6 +70,8 @@ func getNowPlaying(g *Game) Symbol {
 	return Circle
 }
 
+// refreshMainMenu is a function that checks every player action
+// when main menu is active
 func refreshMainMenu(g *Game, input InputEvent) {
 	if input.eventType == Mouse {
 		checkLanguageButtons(g, input)
@@ -88,48 +93,54 @@ func refreshMainMenu(g *Game, input InputEvent) {
 	}
 }
 
+// checkLanguageButtons is a function called in every view refresh menu
+// function to check if player is clicking on a language switch button
 func checkLanguageButtons(g *Game, input InputEvent) {
 	if input.mouseY <= WINDOW_H && input.mouseY > WINDOW_H-15 {
-		if input.mouseX >= 180 && input.mouseX < 217 {
+		if input.mouseX >= 180 && input.mouseX < 217 { // check FR button
 			g.Lang = "fr-FR"
-		} else if input.mouseX >= 217 && input.mouseX < 258 {
+		} else if input.mouseX >= 217 && input.mouseX < 258 { // check EN button
 			g.Lang = "en-US"
-		} else if input.mouseX >= 258 && input.mouseX < 290 {
+		} else if input.mouseX >= 258 && input.mouseX < 290 { // check DE button
 			g.Lang = "de-DE"
 		}
 	}
 }
 
+// refreshLastGamesMenu is a function that checks every player action
+// when last games menu is active
 func refreshLastGamesMenu(g *Game, input InputEvent) {
 	if input.eventType == Mouse {
 		checkLanguageButtons(g, input)
-		if input.mouseY > 500 && input.mouseY < 550 {
+		if input.mouseY > 500 && input.mouseY < 550 { // back to main menu check
 			g.GameState = MainMenu
 		}
 		if input.mouseX > 350 {
-			if input.mouseY > 160 && input.mouseY < 200 {
+			if input.mouseY > 160 && input.mouseY < 200 { // click on most recent played game
 				g.LastGameEntriesViewId = 0
 				g.GameState = OldBoardView
-			} else if input.mouseY > 210 && input.mouseY < 250 {
+			} else if input.mouseY > 210 && input.mouseY < 250 { // 2nd played game
 				g.LastGameEntriesViewId = 1
 				g.GameState = OldBoardView
-			} else if input.mouseY > 260 && input.mouseY < 300 {
+			} else if input.mouseY > 260 && input.mouseY < 300 { // 3rd played game
 				g.LastGameEntriesViewId = 2
 				g.GameState = OldBoardView
-			} else if input.mouseY > 310 && input.mouseY < 350 {
+			} else if input.mouseY > 310 && input.mouseY < 350 { // 4th played game
 				g.LastGameEntriesViewId = 3
 				g.GameState = OldBoardView
-			} else if input.mouseY > 360 && input.mouseY < 400 {
+			} else if input.mouseY > 360 && input.mouseY < 400 { // 5th played game
 				g.LastGameEntriesViewId = 4
 				g.GameState = OldBoardView
 			}
 		}
-	} else if input.eventType == Quit {
+	} else if input.eventType == Quit { // ESC button check
 		g.GameState = MainMenu
 	}
 
 }
 
+// refreshInGame is a function that checks every player action
+// when ingame menu is active
 func refreshInGame(g *Game, input InputEvent) {
 
 	if input.eventType == Mouse {
@@ -179,6 +190,8 @@ func refreshInGame(g *Game, input InputEvent) {
 	}
 }
 
+// refreshOldBoardViewMenu is a function that checks every player action
+// when player watches an old gameboard
 func refreshOldBoardViewMenu(g *Game, input InputEvent) {
 	if input.eventType == Mouse || input.eventType == Quit {
 		checkLanguageButtons(g, input)
@@ -186,9 +199,11 @@ func refreshOldBoardViewMenu(g *Game, input InputEvent) {
 	}
 }
 
+// proceedEndGame is active when game is over and winrod has been drawn.
+// It sends to DB (if usable) all information about game one time.
 func proceedEndGame(g *Game, input InputEvent) {
 	g.CurrentTurn++
-	if g.SqlUsable && !g.SqlProceed {
+	if g.SqlUsable && !g.SqlProceed { // prevent sending to DB multiple times the same game
 		jsonAsBytes, _ := json.Marshal(g)
 		jsonString := string(jsonAsBytes[:])
 		api.UploadNewGame(jsonString)
@@ -208,14 +223,14 @@ func proceedEndGame(g *Game, input InputEvent) {
 	}
 }
 
+// checkWinner is a magical square function to check if
+// a given Symbol is an actual winner of the game. Returns true if so, false otherwise.
 func checkWinner(g *Game, x int, y int, sym Symbol) bool {
-
 	sum := make([]int, 4)
 
 	for i := range g.GameBoard {
 		sum[0] += int(g.GameBoard[i][y])
 	}
-
 	for i := range g.GameBoard[x] {
 		sum[1] += int(g.GameBoard[x][i])
 	}
@@ -225,7 +240,6 @@ func checkWinner(g *Game, x int, y int, sym Symbol) bool {
 
 	for i, v := range sum {
 		if int(v) == (int(sym) * 3) {
-
 			switch i {
 			case 0:
 				g.WinRod.rodType = HRod

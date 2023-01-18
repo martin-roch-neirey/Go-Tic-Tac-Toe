@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Haute école d'ingerie et d'architecture de Fribourg
+// Copyright (c) 2022 Haute école d'ingénierie et d'architecture de Fribourg
 // SPDX-License-Identifier: Apache-2.0
 // Author:  William Margueron & Martin Roch-Neirey
 
@@ -16,7 +16,6 @@ const (
 	SYMBOL_SIZE    = 50
 )
 
-var animatedSize = 1
 var animatedFont font.Face
 var animatedFontList []font.Face
 var listPointer = 0

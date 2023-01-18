@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Haute école d'ingerie et d'architecture de Fribourg
+// Copyright (c) 2022 Haute école d'ingénierie et d'architecture de Fribourg
 // SPDX-License-Identifier: Apache-2.0
 // Author:  William Margueron & Martin Roch-Neirey
 
@@ -17,8 +17,9 @@ var translationsMap = make(map[string]interface{})
 var languageLoaded = "fr-FR" // default language
 var loaded = false
 
-var fallbackCache = make(map[string]string)
+var fallbackCache = make(map[string]string) // cache of fallback translations to query each of them only one time
 
+// GetTranslation returns translation content of given translation id, in given lang
 func GetTranslation(id, lang string) string {
 	if !loaded || languageLoaded != lang {
 		loadTranslations(lang)
@@ -35,7 +36,7 @@ func GetTranslation(id, lang string) string {
 			if !ok {
 				loadTranslations(fmt.Sprint(fallback))
 				loaded = false
-				fallbackCache[id] = GetTranslation(id, fmt.Sprint(fallback))
+				fallbackCache[id] = GetTranslation(id, fmt.Sprint(fallback)) // recursive appeal
 				return fallbackCache[id]
 			} else {
 				return translationCache
@@ -47,6 +48,7 @@ func GetTranslation(id, lang string) string {
 	return fmt.Sprint(translation)
 }
 
+// loadTranslations loads translations of given lang in translationsMap object
 func loadTranslations(lang string) {
 	jsonFile, err := os.Open(translationsFile)
 	if err != nil {

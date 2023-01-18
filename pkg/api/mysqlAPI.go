@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Haute école d'ingerie et d'architecture de Fribourg
+// Copyright (c) 2022 Haute école d'ingénierie et d'architecture de Fribourg
 // SPDX-License-Identifier: Apache-2.0
 // Author:  William Margueron & Martin Roch-Neirey
 
@@ -7,7 +7,6 @@ package api
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"strings"
@@ -20,6 +19,8 @@ var gamesCountCache int
 var isLastGamesCacheValid = false
 var lastGamesCache []string
 
+// getDatabaseConnection returns a sql.DB object
+// that represents connection to mySQL database
 func getDatabaseConnection() (*sql.DB, error) {
 	db, err := sql.Open("mysql", "root:@tcp(127.0.0.1:3306)/test")
 	if err != nil {
@@ -28,6 +29,7 @@ func getDatabaseConnection() (*sql.DB, error) {
 	return db, nil
 }
 
+// IsSqlApiUsable returns true if mySQL database is reachable, false otherwise
 func IsSqlApiUsable() bool {
 	db, err := getDatabaseConnection()
 	pingError := db.Ping()
@@ -37,6 +39,7 @@ func IsSqlApiUsable() bool {
 	return true
 }
 
+// GetGamesCount returns number of rows in games table
 func GetGamesCount() int {
 	if isGamesCountCacheValid {
 		return gamesCountCache
@@ -54,10 +57,11 @@ func GetGamesCount() int {
 	}
 
 	gamesCountCache = count
-	go validateCache(&isGamesCountCacheValid)
+	go validateCache(&isGamesCountCacheValid) // validate cache after sql query
 	return count
 }
 
+// GetLastGames returns the five last rows inserted to games table
 func GetLastGames() []string {
 
 	if isLastGamesCacheValid {
@@ -85,13 +89,12 @@ func GetLastGames() []string {
 		}
 	}
 
-	fmt.Println(games)
-
-	go validateCache(&isLastGamesCacheValid)
+	go validateCache(&isLastGamesCacheValid) // validate cache after sql query
 	lastGamesCache = games
 	return games
 }
 
+// UploadNewGame uploads given json to database as a new game entry
 func UploadNewGame(json string) {
 	db, _ := getDatabaseConnection()
 	defer closeDatabaseConnection(db)
@@ -107,6 +110,7 @@ func UploadNewGame(json string) {
 	}
 }
 
+// closeDatabaseConnection closes db connection
 func closeDatabaseConnection(db *sql.DB) {
 	err := db.Close()
 	if err != nil {
@@ -114,6 +118,8 @@ func closeDatabaseConnection(db *sql.DB) {
 	}
 }
 
+// validateCache is a function used to validate cache of a specific object type.
+// Cache will be valid 10 seconds
 func validateCache(variable *bool) {
 	*variable = true
 	time.Sleep(10 * time.Second)
