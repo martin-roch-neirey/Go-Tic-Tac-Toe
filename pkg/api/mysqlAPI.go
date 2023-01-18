@@ -1,3 +1,7 @@
+// Copyright (c) 2022 Haute école d'ingerie et d'architecture de Fribourg
+// SPDX-License-Identifier: Apache-2.0
+// Author:  William Margueron & Martin Roch-Neirey
+
 package api
 
 import (
@@ -65,7 +69,6 @@ func GetLastGames() []string {
 
 	var query string
 	query = "SELECT * FROM (SELECT * FROM games3 ORDER BY id DESC LIMIT 5) AS sub ORDER BY id DESC;"
-	// query = strings.Replace(query, "VAL1", strconv.Itoa(number), 1)
 
 	var games []string
 	rows, _ := db.Query(query)
@@ -97,8 +100,6 @@ func UploadNewGame(json string) {
 	query = "INSERT INTO games3(date, properties) VALUES('VAL1', 'VAL2');"
 	query = strings.Replace(query, "VAL1", time.Now().Format("2006-01-02 15-04-05"), 1)
 	query = strings.Replace(query, "VAL2", json, 1)
-
-	// fmt.Println(query)
 
 	_, err := db.Query(query)
 	if err != nil {
