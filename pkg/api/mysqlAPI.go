@@ -22,7 +22,7 @@ var lastGamesCache []string
 // getDatabaseConnection returns a sql.DB object
 // that represents connection to mySQL database
 func getDatabaseConnection() (*sql.DB, error) {
-	db, err := sql.Open("mysql", "root:@tcp(127.0.0.1:3306)/test")
+	db, err := sql.Open("mysql", "root:test@tcp(51.210.255.160:3306)/tictactoe")
 	if err != nil {
 		return nil, errors.New("mySQL DB not reachable")
 	}
