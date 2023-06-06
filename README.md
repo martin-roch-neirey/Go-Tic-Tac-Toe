@@ -1,6 +1,11 @@
 # TicTacToe project - Group 9
 ---
-## Students:
+## Basic informations
+- HEIA-FR student mini-project
+- Goal: discover Go language by developing a game
+- Initial repo: https://github.com/LempekPL/GoTicTacToe
+
+## Students
 - Margueron William
 - Roch-Neirey Martin
 

@@ -1,0 +1,46 @@
+{
+ "Assets": {
+  "circle": {},
+  "cross": {},
+  "map": {}
+ },
+ "Fonts": {
+  "animated_size_1": {},
+  "animated_size_10": {},
+  "animated_size_2": {},
+  "animated_size_3": {},
+  "animated_size_4": {},
+  "animated_size_5": {},
+  "animated_size_6": {},
+  "animated_size_7": {},
+  "animated_size_8": {},
+  "animated_size_9": {},
+  "normal": {},
+  "title": {}
+ },
+ "GameBoard": [
+  [
+   0,
+   0,
+   0
+  ],
+  [
+   1,
+   4,
+   0
+  ],
+  [
+   0,
+   0,
+   1
+  ]
+ ],
+ "GameState": 1,
+ "GameMode": 0,
+ "PlayerInput": {
+  "EventType": 0,
+  "MouseX": 401,
+  "MouseY": 389
+ },
+ "CurrentTurn": 3
+}
